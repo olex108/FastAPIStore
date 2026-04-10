@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     DB_USERNAME: str
     DB_PASSWORD: str
     DB_HOST: str
-    DB_PORT: str
+    DB_PORT: int
     DB_NAME: str
 
     model_config = SettingsConfigDict(
@@ -28,8 +28,13 @@ class Settings(BaseSettings):
     )
 
     @property
+    def DATABASE_SYNC_URL(self):
+        return f"postgresql://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+
+    @property
     def DATABASE_ASYNC_URL(self):
-        return f"postgresql+asyncpg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}/{self.DB_NAME}"
+        return f"postgresql+asyncpg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
 
 # получение переменных из настроек с их сохранением в кеш

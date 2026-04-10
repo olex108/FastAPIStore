@@ -14,7 +14,6 @@ debug_logger.debug("--- Database start ---")
 
 # Database configuration
 settings = get_settings()
-DATABASE_ASYNC_URL = get_settings().DATABASE_ASYNC_URL
 
 # Sync database
 # Движок для синхронного использования
@@ -30,10 +29,18 @@ DATABASE_ASYNC_URL = get_settings().DATABASE_ASYNC_URL
 
 # Async database
 async_engine = create_async_engine(
-    url=settings.DATABASE_URL,
+    url=settings.DATABASE_ASYNC_URL,
     echo=True,
     # pool_size=10,
     # max_overflow=10,
 )
 
 async_session_maker = async_sessionmaker(async_engine, expire_on_commit=False)
+
+# Зависимость для FastAPI
+async def get_async_session():
+    async with async_session_maker() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
