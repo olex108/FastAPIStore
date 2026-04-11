@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     DB_PORT: int
     DB_NAME: str
 
+    POOL_SIZE: int = 10
+    MAX_OVERFLOW: int = 50
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
         env_file_encoding='utf-8',
