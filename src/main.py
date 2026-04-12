@@ -4,9 +4,10 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 
-from config.database import db_handler
-from config.logger import LOGGING_CONFIG
-from config.settings import get_settings
+from .config.database import db_handler
+from .config.logger import LOGGING_CONFIG
+from .config.settings import get_settings
+from .routers import user
 
 
 @asynccontextmanager
@@ -31,8 +32,10 @@ async def lifespan(app: FastAPI):
 
 main_app = FastAPI(lifespan=lifespan)
 
+main_app.include_router(user.router)
+
 
 if __name__ == "__main__":
     settings = get_settings()
 
-    uvicorn.run("main:main_app", host=settings.HOST, port=settings.PORT, reload=True, log_config=LOGGING_CONFIG)
+    uvicorn.run("src.main:main_app", host=settings.HOST, port=settings.PORT, reload=True, log_config=LOGGING_CONFIG)

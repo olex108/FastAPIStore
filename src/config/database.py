@@ -1,19 +1,17 @@
 # database.py
 import logging
-
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator
 
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
 from databases import Database
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
 from .settings import get_settings
 
 # Logging
 debug_logger = logging.getLogger("debug")
-
-debug_logger.debug("--- Database start ---")
 
 
 class DatabaseHandler(ABC):
@@ -54,6 +52,8 @@ class DatabaseAsyncHandler(DatabaseHandler):
         max_overflow: int = 10,
     ) -> None:
 
+        debug_logger.debug("--- Database handler init ---")
+        print("!!!!!!!!!!", debug_logger.getEffectiveLevel())
         self.engine: AsyncEngine = create_async_engine(
             url=database_url,
             echo=echo,
@@ -61,10 +61,7 @@ class DatabaseAsyncHandler(DatabaseHandler):
             max_overflow=max_overflow,
         )
         self.session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
-            bind=self.engine,
-            autocommit=False,
-            autoflush=False,
-            expire_on_commit=False
+            bind=self.engine, autocommit=False, autoflush=False, expire_on_commit=False
         )
 
         # Движок для асинхронного использования
@@ -72,11 +69,13 @@ class DatabaseAsyncHandler(DatabaseHandler):
 
     async def dispose(self) -> None:
         """Асинхронный метод для закрытия сессии"""
+
+        debug_logger.debug("--- Database handler dispose ---")
         await self.engine.dispose()
 
     async def session_getter(self) -> AsyncGenerator[AsyncSession, None]:
         """Зависимость для FastAPI"""
-
+        debug_logger.debug("--- Database handler session_maker get ---")
         async with self.session_maker as session:
             try:
                 yield session

@@ -52,6 +52,7 @@ exclude = '''
     | \.tox
     | \.venv
     | dist
+    | \.migrations
   )/
   | foo.py           # Также отдельно исключить файл с именем foo.py
                      # в корне проекта
