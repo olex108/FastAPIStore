@@ -1,9 +1,9 @@
+# routers/user.py
 from fastapi import APIRouter, Depends
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import session
 from typing import List
-
 
 from src.config.database import db_handler
 from src.crud.user import get_all_users
