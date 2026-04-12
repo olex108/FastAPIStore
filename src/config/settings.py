@@ -18,8 +18,10 @@ class Settings(BaseSettings):
     # project
     SECRET_KEY: str
     DEBUG: bool
-    HOST: str = "0.0.0.0"
-    PORT: int = 8080
+    HOST: str = "127.0.0.1"
+    PORT: int = 8000
+
+    DEBUG_TOOLBAR: bool = True
 
     # Database
     DB_USERNAME: str
