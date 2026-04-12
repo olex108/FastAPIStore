@@ -48,14 +48,14 @@ async def lifespan(app: FastAPI):
 main_app = FastAPI(lifespan=lifespan)
 
 # Добавляем middleware
-# main_app.add_middleware(LogMiddleware)
-# main_app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+main_app.add_middleware(LogMiddleware)
+main_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # if settings.DEBUG and settings.DEBUG_TOOLBAR:
 #     main_app.add_middleware(
 #         DebugToolbarMiddleware,
@@ -65,9 +65,12 @@ main_app = FastAPI(lifespan=lifespan)
 
 main_app.include_router(user.router)
 
+# print("Routers: ", main_app.routes)
+
 
 @main_app.get("/")
 def read_root():
+    print("!!!MAIN GET TEST!!!")
     return {"message": "Hello, World!"}
 
 
