@@ -5,11 +5,11 @@ from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 
-class ModelsAnnotation:
-    """Кастомные настройки аннотации полей в моделях"""
-
-    created_at = Annotated[datetime, mapped_column(server_default=datetime.now())]
-    updated_at = Annotated[datetime, mapped_column(server_default=datetime.now(), onupdate=datetime.now())]
+# class ModelsAnnotation:
+#     """Кастомные настройки аннотации полей в моделях"""
+#
+#     created_at = Annotated[datetime, mapped_column(server_default=datetime.now())]
+#     updated_at = Annotated[datetime, mapped_column(server_default=datetime.now(), onupdate=datetime.now())]
 
 
 # Создание базового класса для наследования моделями
@@ -30,6 +30,6 @@ class Base(DeclarativeBase):
 
 
 # Импортируем модели для инициализации при миграциях
-from .cart import Cart
-from .product import Product
-from .user import User
+# from .cart import Cart
+# from .product import Product
+# from .user import User
