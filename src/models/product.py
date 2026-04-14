@@ -17,9 +17,13 @@ class Product(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
     price: Mapped[int] = mapped_column()
-    quantity: Mapped[int] = mapped_column()
-    create_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    update_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=datetime.now())
+    quantity: Mapped[int] = mapped_column(nullable=True)
+    create_at: Mapped[datetime] = mapped_column(server_default=func.now(), default=func.now())
+    update_at: Mapped[datetime] = mapped_column(
+        server_default=func.now(),
+        default=func.now(),
+        onupdate=func.now()
+    )
     is_active: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
     # Обратные связи
