@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     POOL_SIZE: int = 10
     MAX_OVERFLOW: int = 50
 
+    # AUTHENTICATION
+    ALGORITHM = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
         env_file_encoding="utf-8",
