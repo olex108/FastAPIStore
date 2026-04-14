@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     DEBUG: bool
     HOST: str = "127.0.0.1"
-    PORT: int = 8003
+    PORT: int = 8880
 
     DEBUG_TOOLBAR: bool = True
 
@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     MAX_OVERFLOW: int = 50
 
     # AUTHENTICATION
-    ALGORITHM = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES = 60
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
