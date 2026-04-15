@@ -1,39 +1,106 @@
 # database.py
 import logging
+from abc import ABC, abstractmethod
+from typing import AsyncGenerator
 
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base, sessionmaker
-from databases import Database
+from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
 from .settings import get_settings
 
 # Logging
 debug_logger = logging.getLogger("debug")
-
-debug_logger.debug("--- Database start ---")
-
 # Database configuration
 settings = get_settings()
-DATABASE_ASYNC_URL = get_settings().DATABASE_ASYNC_URL
 
-# Sync database
-# Движок для синхронного использования
-# engine = create_engine(DATABASE_SYNC_URL)
 
-# metadata = MetaData()
+class DatabaseHandler(ABC):
+    """Абстрактный класс для работы с базой данных"""
 
-# Движок для асинхронного использования
-# database = Database(DATABASE_URL)
+    def __init__(self):
+        self.engine = None
+        self.session_maker = None
 
-# Создание фабрики сессий
-# SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    @abstractmethod
+    def init_db(
+        self,
+        database_url: str,
+        echo: bool = False,
+        pool_size: int = 5,
+        max_overflow: int = 10,
+    ):
+        """Метод для инициализации движка и фабрики сессий"""
+        pass
+
+
+class DatabaseSyncHandler(DatabaseHandler):
+    """Класс для синхронной работы с базой данных"""
+
+    def init_db(
+        self,
+        database_url: str,
+        echo: bool = False,
+        pool_size: int = 5,
+        max_overflow: int = 10,
+    ):
+        """Метод для инициализации движка и фабрики сессий"""
+
+        # Движок для синхронного использования
+        self.engine = create_engine(
+            database_url,
+            echo=echo,
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+        )
+
+        # Создание фабрики сессий
+        self.session_maker = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+
 
 # Async database
-async_engine = create_async_engine(
-    url=settings.DATABASE_URL,
-    echo=True,
-    # pool_size=10,
-    # max_overflow=10,
-)
+class DatabaseAsyncHandler(DatabaseHandler):
+    """Класс для асинхронной работы с базой данных"""
 
-async_session_maker = async_sessionmaker(async_engine, expire_on_commit=False)
+    def init_db(
+        self,
+        database_url: str,
+        echo: bool = False,
+        pool_size: int = 5,
+        max_overflow: int = 10,
+    ) -> None:
+        """Метод для инициализации движка и фабрики сессий"""
+
+        debug_logger.debug("--- Database handler init ---")
+
+        self.engine: AsyncEngine = create_async_engine(
+            url=database_url,
+            echo=echo,
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+        )
+        self.session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
+            bind=self.engine, autocommit=False, autoflush=False, expire_on_commit=False
+        )
+
+        # Движок для асинхронного использования
+        # database = Database(DATABASE_URL)
+
+    async def dispose(self) -> None:
+        """Асинхронный метод для закрытия сессии"""
+
+        debug_logger.debug("--- Database handler dispose ---")
+        await self.engine.dispose()
+
+    async def session_getter(self) -> AsyncGenerator[AsyncSession, None]:
+        """Зависимость для FastAPI"""
+
+        debug_logger.debug("--- Database handler session_maker get ---")
+        async with self.session_maker() as session:
+            try:
+                yield session
+            finally:
+                await session.close()
+
+
+db_handler = DatabaseAsyncHandler()
