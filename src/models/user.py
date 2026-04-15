@@ -1,7 +1,7 @@
 # models/user.py
 from typing import List
 
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -11,6 +11,7 @@ class User(Base):
     """
     Модель Пользователя
     """
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -34,6 +35,7 @@ class Group(Base):
     """
     Модель Группы
     """
+
     __tablename__ = "groups"
 
     id: Mapped[int] = mapped_column(primary_key=True)

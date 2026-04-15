@@ -3,10 +3,9 @@ import logging
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator
 
-from databases import Database
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from .settings import get_settings
 
@@ -56,9 +55,7 @@ class DatabaseSyncHandler(DatabaseHandler):
         )
 
         # Создание фабрики сессий
-        self.session_maker = sessionmaker(
-            autocommit=False, autoflush=False, bind=self.engine
-        )
+        self.session_maker = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
 
 # Async database

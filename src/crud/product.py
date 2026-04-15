@@ -1,13 +1,11 @@
 import logging
 from typing import Sequence
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.product import Product
 from src.schemas.product import CreateProduct
-
-from sqlalchemy import select
-
 
 debug_logger = logging.getLogger("debug")
 
@@ -31,13 +29,13 @@ async def get_all_products(session: AsyncSession) -> Sequence[Product]:
     return result.scalars().all()
 
 
-async def get_product_by_id(product_id: int, session: AsyncSession) -> Product|None:
+async def get_product_by_id(product_id: int, session: AsyncSession) -> Product | None:
     query = select(Product).where(Product.id == product_id)
     result = (await session.execute(query)).scalar_one_or_none()
     return result
 
 
-async def update_product_by_id(product: CreateProduct, product_id: int, session: AsyncSession) -> Product|None:
+async def update_product_by_id(product: CreateProduct, product_id: int, session: AsyncSession) -> Product | None:
     db_product = await session.get(Product, product_id)
     if db_product is None:
         return db_product
@@ -53,7 +51,11 @@ async def update_product_by_id(product: CreateProduct, product_id: int, session:
         debug_logger.debug(f"--- Update product failed: {e} ---")
         return None
 
-async def delete_product_by_id(product_id: int, session: AsyncSession, ) -> Product|None:
+
+async def delete_product_by_id(
+    product_id: int,
+    session: AsyncSession,
+) -> Product | None:
     db_product = await session.get(Product, product_id)
     if db_product is None:
         return db_product

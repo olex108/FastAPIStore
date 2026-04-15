@@ -1,78 +1,57 @@
+from src.models.user import User
+from src.crud.user import get_user_by_email_or_phone
+from src.services.password import PasswordHandler
+from src.crud.auth import create_refresh_session
+
+from fastapi import Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.config.settings import get_settings
+
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Tuple
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jwt.exceptions import InvalidTokenError
-from pwdlib import PasswordHash
-from pydantic import BaseModel
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.models.user import User
-from src.config.settings import get_settings
 
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-
-class PasswordHandler:
-    """Сервис для работы с хешированными паролями"""
-
-    password_hash: PasswordHash = PasswordHash.recommended()
-    DUMMY_HASH: str = password_hash.hash("dummypassword")
-
-    @classmethod
-    def verify_password(cls, plain_password, hashed_password):
-        return cls.password_hash.verify(plain_password, hashed_password)
-
-    @classmethod
-    def get_password_hash(cls, password):
-        return cls.password_hash.hash(password)
-
-    @classmethod
-    def dammy_verify(cls, password):
-        cls.verify_password(password, cls.DUMMY_HASH)
-        return False
-
-
 class AuthUserService:
-
-    def authenticate_user(self, session: AsyncSession, username: str, password: str):
+    @staticmethod
+    async def authenticate_user(session: AsyncSession, user_identity: str, password: str) -> Tuple[User, str] | None:
         """
-        Метод для аунтефикации пользователя для получения пользователя или
-
-        :param session:
-        :param username:
-        :param password:
-        :return:
+        Метод для аутентификации пользователя
         """
-            # def authenticate_user(self, session: AsyncSession, email: str | None, phone: str | None, password: str):
-                # if email:
-                #     user = get_user_by_email
-                # elif phone:
-                #     user = get_user_by_phone()
 
-        user = self.get_user(session, username)
+        user = await get_user_by_email_or_phone(session=session, user_identity=user_identity)
         if not user:
             return PasswordHandler.dammy_verify(password)
-        if not PasswordHandler.verify_password(password, user.hashed_password):
-            return False
-        return user
+        else:
+            if not PasswordHandler.verify_password(password, user.hashed_password):
+                return None
+        return user, user_identity
 
     @staticmethod
-    def get_user(session: AsyncSession, username: str):
-        user = session.query(User).filter(User.email == username).first()
-        if user:
-            # Вариант с преобразованием в пайдентик
-            # user_dict = db[username]
-            # return UserInDB(**user_dict)
+    def create_access_token(data: dict, expires_delta: timedelta | None = None):
+        """Создание access токена"""
+        to_encode = data.copy()
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        return encoded_jwt
 
-            # Возвращаем модель пользователя
-            return user
-        else:
-            return None
+    @staticmethod
+    def create_refresh_token(data: dict) -> str:
+        """Создание refresh токена"""
+        to_encode = data.copy()
+        expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+        return encoded_jwt
+
 
     async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         pass
@@ -95,7 +74,7 @@ class AuthUserService:
         # return user
 
     async def get_current_active_user(
-            current_user: Annotated[User, Depends(get_current_user)],
+        current_user: Annotated[User, Depends(get_current_user)],
     ):
         if current_user.disabled:
             raise HTTPException(status_code=400, detail="Inactive user")

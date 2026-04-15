@@ -1,10 +1,9 @@
 # schemas/user.py
 import logging
-from pydantic import BaseModel, EmailStr, model_validator, field_validator, ValidationError
 import re
-
 from typing import Self
 
+from pydantic import BaseModel, EmailStr, ValidationError, field_validator, model_validator
 
 debug_logger = logging.getLogger("debug")
 
@@ -84,7 +83,6 @@ class UserCreate(BaseModel):
         if v.lower() == "admin":
             raise ValueError("Имя 'admin' зарезервировано")
         return v
-
 
 
 class UserAuth(BaseModel):

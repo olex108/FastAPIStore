@@ -1,8 +1,8 @@
 # middleware/access_logging.py
-from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import Request
 import logging
 
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
 
 access_logger = logging.getLogger("access")
 

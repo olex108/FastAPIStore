@@ -3,17 +3,15 @@ import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
+# from debug_toolbar.middleware import DebugToolbarMiddleware
 from fastapi import FastAPI
-
-from .middlewares.access_logging import LogMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from debug_toolbar.middleware import DebugToolbarMiddleware
 
 from .config.database import db_handler
 from .config.logger import LOGGING_CONFIG
 from .config.settings import get_settings
-from .routers import user, product
-
+from .middlewares.access_logging import LogMiddleware
+from .routers import product, user, auth
 
 settings = get_settings()
 
@@ -65,6 +63,7 @@ main_app.add_middleware(
 
 main_app.include_router(user.router)
 main_app.include_router(product.router)
+main_app.include_router(auth.router)
 
 
 # print("Routers: ", main_app.routes)

@@ -1,27 +1,20 @@
 # routers/user.py
-from fastapi import APIRouter, Depends
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import session
 from typing import List
 
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.config.database import db_handler
-from src.crud.user import get_all_users, create_new_user
+from src.crud.user import create_new_user, get_all_users
 from src.schemas.user import UserInfo, UserRegister
 
-
-router = APIRouter(
-    prefix="/users",
-    tags=["Users"]
-)
+router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.post("/register", response_model=UserInfo)
 async def register_user(user: UserRegister, session: AsyncSession = Depends(db_handler.session_getter)):
-    print("!!! Start register user !!!")
     try:
         new_user = await create_new_user(user=user, session=session)
-        print("!!! New user created before returning user info !!!")
         return new_user
     except Exception as e:
         raise e

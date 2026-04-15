@@ -4,7 +4,6 @@ from typing import Annotated
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 
-
 # class ModelsAnnotation:
 #     """Кастомные настройки аннотации полей в моделях"""
 #
