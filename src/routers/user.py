@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.database import db_handler
 from src.crud.user import create_new_user, get_all_users
+from src.models.user import User
 from src.schemas.user import UserInfo, UserRegister
+from src.services.auth import AuthUserService
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -24,3 +26,8 @@ async def register_user(user: UserRegister, session: AsyncSession = Depends(db_h
 async def get_users(session: AsyncSession = Depends(db_handler.session_getter)):
     users = await get_all_users(session=session)
     return users
+
+
+@router.get("/me", response_model=UserInfo)
+async def get_current_user_info(current_user: User = Depends(AuthUserService.get_current_user)):
+    return current_user

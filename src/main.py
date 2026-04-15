@@ -11,7 +11,7 @@ from .config.database import db_handler
 from .config.logger import LOGGING_CONFIG
 from .config.settings import get_settings
 from .middlewares.access_logging import LogMiddleware
-from .routers import product, user, auth
+from .routers import auth, product, user
 
 settings = get_settings()
 

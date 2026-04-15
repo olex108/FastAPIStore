@@ -2,14 +2,13 @@ import logging
 from typing import Sequence
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.user import User
 from src.schemas.user import UserRegister
-from src.services.password import PasswordHandler
-from sqlalchemy import or_
+from src.services.security import PasswordHandler
 
 debug_logger = logging.getLogger("debug")
 
