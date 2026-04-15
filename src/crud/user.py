@@ -1,0 +1,70 @@
+import logging
+from typing import Sequence
+
+from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.models.user import User
+from src.schemas.user import UserRegister
+from src.services.password import PasswordHandler
+from sqlalchemy import or_
+
+debug_logger = logging.getLogger("debug")
+
+
+async def create_new_user(user: UserRegister, session: AsyncSession):
+    data = user.model_dump(exclude={"confirm_password"})
+    data["hashed_password"] = PasswordHandler.get_password_hash(data.pop("password"))
+
+    new_user = User(**data)
+    session.add(new_user)
+    try:
+        await session.commit()
+        await session.refresh(new_user)
+    except IntegrityError as e:
+        await session.rollback()
+        debug_logger.debug(f"--- Create user failed (IntegrityError): {e} ---")
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+    except Exception as e:
+        await session.rollback()
+        debug_logger.error(f"--- Create user failed: {e} ---")
+        raise e
+
+    return new_user
+
+
+async def get_all_users(session: AsyncSession) -> Sequence[User]:
+    query = select(User).order_by(User.id)
+    result = await session.scalars(query)
+    return result.all()
+
+
+async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
+    query = select(User).where(User.email == email)
+    result = (await session.execute(query)).scalar_one_or_none()
+    return result
+
+
+async def get_user_by_phone(session: AsyncSession, phone: str) -> User | None:
+    query = select(User).where(User.phone == phone)
+    result = (await session.execute(query)).scalar_one_or_none()
+    return result
+
+
+async def get_user_by_email_or_phone(session: AsyncSession, user_identity: str) -> User | None:
+    query = select(User).where(
+        or_(
+            User.phone == user_identity,
+            User.email == user_identity,
+        )
+    )
+    result = (await session.execute(query)).scalar_one_or_none()
+    return result
+
+
+async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
+    query = select(User).where(User.id == user_id)
+    result = (await session.execute(query)).scalar_one_or_none()
+    return result
