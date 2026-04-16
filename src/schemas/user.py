@@ -31,16 +31,16 @@ class UserRegister(BaseModel):
         """
 
         if phone[:2] != "+7":
-            raise ValidationError("Номер телефона должен начинаться с +7")
+            raise ValueError("Номер телефона должен начинаться с +7")
         if len(phone) != 12:
-            raise ValidationError("Номер телефона должен содержать 10 цифр после +7")
+            raise ValueError("Номер телефона должен содержать 10 цифр после +7")
         if not phone[-2:].isdigit():
-            raise ValidationError("Номер телефона должен составлять только цифры")
+            raise ValueError("Номер телефона должен составлять только цифры")
         return phone
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, password: str) -> bool:
+    def validate_password(cls, password: str) -> str:
         """
         Метод для валидации пароля с условиями:
          - Пароль должен соответствовать следующим требованиям: не менее 8 символов,
@@ -72,20 +72,15 @@ class UserRegister(BaseModel):
             raise ValueError("Пароли не совпадают")
         return self
 
-
-class UserCreate(BaseModel):
+class UserLogin(BaseModel):
     username: str
     password: str
 
-    @field_validator("username")
-    @classmethod
-    def username_must_not_be_admin(cls, v: str) -> str:
-        if v.lower() == "admin":
-            raise ValueError("Имя 'admin' зарезервировано")
-        return v
-
 
 class UserAuth(BaseModel):
+    id: int
+    full_name: str
     email: EmailStr
     phone: str
-    password: str
+    is_active: bool
+    is_superuser: bool

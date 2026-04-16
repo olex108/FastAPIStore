@@ -71,7 +71,6 @@ main_app.include_router(auth.router)
 
 @main_app.get("/")
 def read_root():
-    print("!!!MAIN GET TEST!!!")
     return {"message": "Hello, World!"}
 
 

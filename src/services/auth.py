@@ -7,12 +7,14 @@ from jwt import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.settings import get_settings
-from src.crud.user import get_user_by_email_or_phone, get_user_by_id
+from src.config.database import db_handler
+from src.crud.user import get_user_by_email_or_phone, get_user_perms
 from src.models.user import User
+from src.schemas.user import UserInfo
 from src.services.security import PasswordHandler
 
 settings = get_settings()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 class AuthUserService:
@@ -24,13 +26,22 @@ class AuthUserService:
 
         user = await get_user_by_email_or_phone(session=session, user_identity=user_identity)
         if not user:
-            return PasswordHandler.dammy_verify(password)
+            PasswordHandler.dammy_verify(password)
+            return None
         else:
             if not PasswordHandler.verify_password(password, user.hashed_password):
                 return None
         return user, user_identity
 
-    async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], session: AsyncSession) -> User:
+    @staticmethod
+    async def get_current_user(
+        token: Annotated[str, Depends(oauth2_scheme)],
+        session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+    ) -> User:
+        """
+        Метод для получения авторизированного пользователя
+        """
+
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -44,14 +55,19 @@ class AuthUserService:
                 raise credentials_exception
         except PyJWTError:
             raise credentials_exception
-        user = await get_user_by_email_or_phone(session=session, user_identity=user_identity)
+        user = await get_user_perms(session=session, user_identity=user_identity)
         if user is None:
             raise credentials_exception
         return user
 
+    @staticmethod
     async def get_current_active_user(
         current_user: Annotated[User, Depends(get_current_user)],
-    ):
-        if current_user.disabled:
-            raise HTTPException(status_code=400, detail="Inactive user")
+    ) -> User:
+        if not current_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Inactive user",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         return current_user

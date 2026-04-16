@@ -1,9 +1,12 @@
 # routers/product.py
-from typing import List
+from typing import List, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.services.auth import AuthUserService
+from src.dependencies.permissions import PermissionChecker
+from src.schemas.user import UserAuth
 from src.config.database import db_handler
 from src.crud.product import (create_product, delete_product_by_id, get_all_products, get_product_by_id,
                               update_product_by_id)
@@ -13,7 +16,11 @@ router = APIRouter(prefix="/products", tags=["Products"])
 
 
 @router.get("/", name="products", response_model=List[ProductOut])
-async def get_products_list(session: AsyncSession = Depends(db_handler.session_getter)):
+async def get_products_list(
+    # Добавляем проверку авторизации
+    current_user: Annotated[str, Depends(PermissionChecker(["products:view"]))],
+    session: AsyncSession = Depends(db_handler.session_getter)
+):
     product_list = await get_all_products(session=session)
     return product_list
 

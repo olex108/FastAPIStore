@@ -25,7 +25,6 @@ LOGGING_CONFIG = {
             "level": "DEBUG",
             "propagate": False,
         },
-        # Рекомендую добавить uvicorn, чтобы видеть системные сообщения
         "uvicorn": {
             "handlers": ["stdout"],
             "level": "INFO",

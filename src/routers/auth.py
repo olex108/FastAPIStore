@@ -1,7 +1,7 @@
 # routers/auth.py
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +24,7 @@ settings = get_settings()
 @router.post("/login")
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: AsyncSession = Depends(db_handler.session_getter),
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ) -> Token:
     """
     Эндпоинт для аутентификации пользователя.
@@ -59,8 +59,8 @@ async def login(
 
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
-    refresh_token: str,
-    session: AsyncSession = Depends(db_handler.session_getter),
+    refresh_token: Annotated[str, Header()],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для обновления access токена с помощью refresh токена.
