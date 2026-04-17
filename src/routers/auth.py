@@ -13,9 +13,7 @@ from src.schemas.auth import Token
 from src.services.auth import AuthUserService
 from src.services.security import TokenHandler
 
-router = APIRouter(
-    prefix="/auth", tags=["Auth"]
-)
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 settings = get_settings()

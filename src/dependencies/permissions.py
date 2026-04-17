@@ -14,7 +14,6 @@ class PermissionChecker:
 
     def __init__(self, required_permissions: List[str]):
         self.required_permissions = required_permissions
-        print("PERMISSIONS ----------> ", required_permissions)
 
     async def __call__(self, current_user: User = Depends(AuthUserService.get_current_user)) -> User | None:
         # Суперюзер всегда имеет доступ
@@ -24,7 +23,7 @@ class PermissionChecker:
         # Собираем все разрешения пользователя из всех его ролей
         user_permissions = list()
         for role in current_user.roles:
-            user_permissions.extend([perm for perm in role.permissions])
+            user_permissions.extend([perm.name for perm in role.permissions])
 
         print("PERMISSIONS ----------> ", self.required_permissions)
 

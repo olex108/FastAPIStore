@@ -18,7 +18,7 @@ db_handler.init_db(
 TARGET_PERMISSIONS = [
     "products:view",
     "products:create",
-    "products:edit",
+    "products:update",
     "products:delete",
     "users:manage",
 ]

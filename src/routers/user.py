@@ -20,6 +20,7 @@ async def register_user(
 ):
     try:
         new_user = await create_new_user(user=user, session=session)
+        user_cart = await create_cart(new_user, session=session)
         return new_user
     except Exception as e:
         raise HTTPException(
@@ -36,8 +37,6 @@ async def get_users(session: AsyncSession = Depends(db_handler.session_getter)):
 
 
 @router.get("/me", response_model=UserInfo)
-async def get_current_user_info(
-    current_user: Annotated[UserAuth, Depends(AuthUserService.get_current_user)]
-):
+async def get_current_user_info(current_user: Annotated[UserAuth, Depends(AuthUserService.get_current_user)]):
 
     return current_user
