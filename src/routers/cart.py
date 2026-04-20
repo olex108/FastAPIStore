@@ -13,11 +13,11 @@ from src.crud.cart import (
     delete_product_from_cart,
     clear_cart_products
 )
-from src.dependencies.permissions import PermissionChecker, OwnerOrPermissionChecker
+from src.dependencies.permissions import OwnerOrPermissionChecker
 from src.config.database import db_handler
 
 from src.schemas.cart import CartOut, ProductAdd
-from src.services.auth import AuthUserService
+from src.dependencies.auth import AuthUserDependencies
 
 router = APIRouter(
     prefix="/cart",
@@ -32,7 +32,7 @@ exception_400_cart_in_order = HTTPException(status_code=status.HTTP_400_BAD_REQU
 
 @router.get("/me", response_model=CartOut)
 async def get_current_user_cart(
-        current_user: Annotated[User, Depends(AuthUserService.get_current_active_user)],
+        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
         session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
@@ -67,7 +67,7 @@ async def get_cart(
 @router.post("/me/add_product", response_model=CartOut)
 async def add_product(
         product: ProductAdd,
-        current_user: Annotated[User, Depends(AuthUserService.get_current_active_user)],
+        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
         session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
@@ -169,7 +169,7 @@ async def add_products(
 @router.delete("/me/{product_id}", response_model=CartOut)
 async def add_product(
         product_id: int,
-        current_user: Annotated[User, Depends(AuthUserService.get_current_active_user)],
+        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
         session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
@@ -236,7 +236,7 @@ async def add_product(
 
 @router.delete("/me/clear", response_model=CartOut)
 async def clear_cart(
-        current_user: Annotated[User, Depends(AuthUserService.get_current_active_user)],
+        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
         session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """

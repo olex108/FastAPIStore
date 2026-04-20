@@ -58,7 +58,6 @@ class DatabaseSyncHandler(DatabaseHandler):
         self.session_maker = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
 
-# Async database
 class DatabaseAsyncHandler(DatabaseHandler):
     """Класс для асинхронной работы с базой данных"""
 
@@ -82,9 +81,6 @@ class DatabaseAsyncHandler(DatabaseHandler):
         self.session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False, expire_on_commit=False
         )
-
-        # Движок для асинхронного использования
-        # database = Database(DATABASE_URL)
 
     async def dispose(self) -> None:
         """Асинхронный метод для закрытия сессии"""

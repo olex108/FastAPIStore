@@ -14,15 +14,23 @@ db_handler.init_db(
     max_overflow=settings.MAX_OVERFLOW,
 )
 
-# --- КОНФИГУРАЦИЯ ---
+# --- Разрешения ---
 TARGET_PERMISSIONS = [
     "products:view",
     "products:create",
     "products:update",
     "products:delete",
-    "users:manage",
+
+    "users:view",
+    "users:update",
+    "users:delete",
+
+    "carts:view",
+    "carts:update",
+    "carts:delete",
 ]
 
+# --- Роли ---
 TARGET_ROLES = [
     "Admin",
     "Manager",

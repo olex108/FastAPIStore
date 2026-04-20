@@ -3,13 +3,21 @@ import logging
 import re
 from typing import Self
 
-from pydantic import BaseModel, EmailStr, ValidationError, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    field_validator,
+    model_validator,
+    ConfigDict
+)
 
 debug_logger = logging.getLogger("debug")
 
 
 class UserInfo(BaseModel):
+    """Схема для передачи ответа информации о пользователе"""
 
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     full_name: str
@@ -18,6 +26,8 @@ class UserInfo(BaseModel):
 
 
 class UserRegister(BaseModel):
+    """Схема для регистрации пользователя"""
+
     full_name: str
     email: EmailStr
     phone: str
@@ -70,17 +80,23 @@ class UserRegister(BaseModel):
 
     @model_validator(mode="after")
     def check_passwords_match(self) -> Self:
+        """Проверка на совпадения полей пароля"""
+
         if self.password != self.confirm_password:
             raise ValueError("Пароли не совпадают")
         return self
 
 
 class UserLogin(BaseModel):
+    """Схема для аутентификации пользователя"""
+
     user: str
     password: str
 
 
-class UserAuth(BaseModel):
+class UserUpdate(BaseModel):
+    """Схема для изменения полей пользователя"""
+
     id: int
     full_name: str
     email: EmailStr

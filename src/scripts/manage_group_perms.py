@@ -15,8 +15,6 @@ db_handler.init_db(
 )
 
 
-
-
 async def get_roles(session):
     result = await session.execute(select(Role).order_by(Role.id))
     return result.scalars().all()

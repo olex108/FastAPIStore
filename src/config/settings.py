@@ -15,13 +15,13 @@ class Settings(BaseSettings):
 
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
-    # project
+    # Project
     SECRET_KEY: str
     DEBUG: bool
     HOST: str = "127.0.0.1"
     PORT: int = 2222
 
-    DEBUG_TOOLBAR: bool = True
+    # DEBUG_TOOLBAR: bool = True
 
     # Database
     DB_USERNAME: str

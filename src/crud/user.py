@@ -14,7 +14,7 @@ from src.utils.security import PasswordHandler
 debug_logger = logging.getLogger("debug")
 
 
-async def create_new_user(user: UserRegister, session: AsyncSession):
+async def create_new_user(user: UserRegister, session: AsyncSession) -> User:
     data = user.model_dump(exclude={"confirm_password"})
     data["hashed_password"] = PasswordHandler.get_password_hash(data.pop("password"))
 
@@ -69,7 +69,7 @@ async def get_user_by_email_or_phone(session: AsyncSession, user: str) -> User |
 
 
 async def get_user_perms(session: AsyncSession, user_identity: str):
-    """Функция для получения данный пользователя включая группы и разрешения"""
+    """Функция для получения данный пользователя включая группы, корзину и разрешения"""
 
     query = (
         select(User)
@@ -84,7 +84,6 @@ async def get_user_perms(session: AsyncSession, user_identity: str):
             selectinload(User.cart)
         )
     )
-
     user = (await session.execute(query)).scalar_one_or_none()
 
     return user
