@@ -26,6 +26,7 @@ async def create_new_user(user: UserRegister, session: AsyncSession):
     try:
         await session.commit()
         await session.refresh(new_user)
+        debug_logger.info(f"Created new user {new_user}")
     except IntegrityError as e:
         await session.rollback()
         debug_logger.debug(f"--- Create user failed (IntegrityError): {e} ---")

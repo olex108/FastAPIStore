@@ -11,7 +11,7 @@ from .config.database import db_handler
 from .config.logger import LOGGING_CONFIG
 from .config.settings import get_settings
 from .middlewares.access_logging import LogMiddleware
-from .routers import auth, product, user
+from .routers import auth, product, user, cart
 
 settings = get_settings()
 
@@ -64,6 +64,7 @@ main_app.add_middleware(
 main_app.include_router(user.router)
 main_app.include_router(product.router)
 main_app.include_router(auth.router)
+main_app.include_router(cart.router)
 
 
 # print("Routers: ", main_app.routes)

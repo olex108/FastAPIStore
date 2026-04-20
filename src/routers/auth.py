@@ -15,7 +15,7 @@ from src.services.security import TokenHandler
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 settings = get_settings()
 
 
@@ -37,9 +37,16 @@ async def login(
     """
 
     # Получаем пользователя из базы данных
-    user, user_identity = await AuthUserService.authenticate_user(
-        session=session, user_identity=form_data.username, password=form_data.password
-    )
+    try:
+        user, user_identity = await AuthUserService.authenticate_user(
+            session=session, user_identity=form_data.username, password=form_data.password
+        )
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email, phone or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

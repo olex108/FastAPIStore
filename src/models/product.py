@@ -7,6 +7,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 
+# class Category(Base):
+#     pass
+
+
 class Product(Base):
     """
     Модель Товары для сохранения данных
@@ -23,7 +27,10 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
     # Обратные связи
-    carts: Mapped[List["CartProducts"]] = relationship(back_populates="products")
+    carts: Mapped[List["CartProducts"]] = relationship(back_populates="product")
 
     def __str__(self):
         return f"{self.id} - {self.name} - {self.price} - {self.quantity}"
+
+    def __repr__(self):
+        return self.__str__()

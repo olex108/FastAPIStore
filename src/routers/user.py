@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.database import db_handler
 from src.crud.user import create_new_user, get_all_users
+from src.crud.cart import create_cart
 from src.models.user import User
 from src.schemas.user import UserInfo, UserRegister, UserAuth
 from src.services.auth import AuthUserService

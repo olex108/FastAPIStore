@@ -1,44 +1,118 @@
 import logging
-from typing import Annotated
+from typing import Annotated, List
 
 from fastapi import Depends
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.config.database import db_handler
 from src.models.user import User
-from src.models.cart import Cart, CartProducts
+from src.models.cart import Cart, CartProducts, CartStatus
 from src.models.product import Product
+from src.schemas.cart import ProductAdd
 
 
 debug_logger = logging.getLogger("debug")
 
 
-async def create_cart(user: User, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]):
+async def create_cart(user: User, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> None:
     try:
         new_cart = Cart(user_id=user.id)
         session.add(new_cart)
         await session.commit()
+        debug_logger.info("Created new cart")
 
     except Exception as e:
         await session.rollback()
-        debug_logger.error(f"--- Create cat failed: {e} ---")
+        debug_logger.error(f"--- Create cart failed: {e} ---")
         raise e
 
-async def get_user_cart(user_id: int, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]):
+async def get_user_cart(user_id: int, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> Cart:
     try:
         query = (
             select(Cart).where(
-                    Cart.user_id == user_id
+                    Cart.user_id == user_id, Cart.status == CartStatus.CURRENT
                 )
             .options(
-                selectinload(Cart.products).selectinload(CartProducts.product_id)
+                selectinload(Cart.products).selectinload(CartProducts.product)
             )
         )
         result = (await session.execute(query)).scalar_one_or_none()
         return result
     except Exception as e:
         await session.rollback()
-        debug_logger.error(f"--- Create cat failed: {e} ---")
+        debug_logger.error(f"--- Create cart failed: {e} ---")
+        raise e
+
+
+async def add_product_to_cart(
+        product: ProductAdd,
+        session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+) -> None:
+    """
+    Функция для добавления продукта в корзину.
+    Принимает продукт
+    В случае наличия продукта в корзине (проверка по product_id) заменяет старое значение на новое
+    """
+
+    new_product = {
+        "cart_id": product.cart_id,
+        "product_id": product.product_id,
+        "product_quantity": product.product_quantity,
+    }
+    query = insert(CartProducts).values(new_product)
+
+    upsert_stmt = query.on_conflict_do_update(
+        index_elements=["cart_id", "product_id"],
+        set_={
+            "product_quantity": query.excluded.product_quantity
+        }
+    )
+
+    try:
+        await session.execute(upsert_stmt)
+        await session.commit()
+        debug_logger.info(f"Add product {product.product_id}")
+    except Exception as e:
+        await session.rollback()
+        debug_logger.error(f"--- Add product failed: {e} ---")
+        raise e
+
+
+async def add_products_list_to_cart(
+        products_list: List[ProductAdd],
+        session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+) -> None:
+    """
+    Функция для добавления списка продуктов в корзину.
+    Принимает список продуктов
+    В случае наличия продукта в корзине (проверка по product_id) производится суммирование старого и нового значений
+    """
+
+    new_products = [
+        {
+            "cart_id": product.cart_id,
+            "product_id": product.product_id,
+            "product_quantity": product.product_quantity,
+        }
+        for product in products_list
+    ]
+
+    query = insert(CartProducts).values(new_products)
+
+    upsert_query = query.on_conflict_do_update(
+        index_elements=["cart_id", "product_id"],
+        set_={"product_quantity": CartProducts.product_quantity + query.excluded.product_quantity}
+    )
+
+    try:
+        await session.execute(upsert_query)
+        await session.commit()
+        debug_logger.info(f"Add products list with {len(products_list)} products")
+    except IntegrityError as e:
+        await session.rollback()
+        debug_logger.error(f"--- Add product failed: {e} ---")
         raise e

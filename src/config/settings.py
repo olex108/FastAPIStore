@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     DEBUG: bool
     HOST: str = "127.0.0.1"
-    PORT: int = 8888
+    PORT: int = 2222
 
     DEBUG_TOOLBAR: bool = True
 
