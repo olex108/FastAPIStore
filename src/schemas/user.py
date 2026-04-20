@@ -9,6 +9,8 @@ debug_logger = logging.getLogger("debug")
 
 
 class UserInfo(BaseModel):
+
+
     id: int
     full_name: str
     email: EmailStr
@@ -72,8 +74,9 @@ class UserRegister(BaseModel):
             raise ValueError("Пароли не совпадают")
         return self
 
+
 class UserLogin(BaseModel):
-    username: str
+    user: str
     password: str
 
 

@@ -56,6 +56,7 @@ async def delete_product_by_id(
     product_id: int,
     session: AsyncSession,
 ) -> Product | None:
+
     db_product = await session.get(Product, product_id)
     if db_product is None:
         return db_product

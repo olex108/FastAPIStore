@@ -9,7 +9,7 @@ from pwdlib import PasswordHash
 from src.config.settings import get_settings
 
 settings = get_settings()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 debug_logger = logging.getLogger("debug")
 

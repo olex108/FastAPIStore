@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from typing import List, Annotated
-from src.models import User, Role, Permission
-from src.services.auth import AuthUserService # Ваш сервис получения текущего пользователя
+from src.models import User
+from src.dependencies.auth import AuthUserDependencies # Ваш сервис получения текущего пользователя
 
 forbidden_exception = HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -20,7 +20,7 @@ class PermissionChecker:
     def __init__(self, required_permissions: List[str]):
         self.required_permissions = required_permissions
 
-    async def __call__(self, current_user: Annotated[User, Depends(AuthUserService.get_current_active_user)]) -> User:
+    async def __call__(self, current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)]) -> User:
 
         if await self.__check_permissions(current_user):
             return current_user
@@ -55,7 +55,7 @@ class OwnerOrPermissionChecker:
     def __init__(self, required_permissions: List[str] = None):
         self.required_permissions = required_permissions
 
-    async def __call__(self, user_id: int, current_user: Annotated[User, Depends(AuthUserService.get_current_active_user)]) -> User:
+    async def __call__(self, user_id: int, current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)]) -> User:
 
         # Проверка является ли текущий пользователь владельцем
         if current_user.id == user_id:

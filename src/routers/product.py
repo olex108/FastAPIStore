@@ -4,9 +4,7 @@ from typing import List, Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.services.auth import AuthUserService
 from src.dependencies.permissions import PermissionChecker
-from src.schemas.user import UserAuth
 from src.config.database import db_handler
 from src.crud.product import (
     create_product,
@@ -15,7 +13,7 @@ from src.crud.product import (
     get_product_by_id,
     update_product_by_id,
 )
-from src.schemas.product import CreateProduct, Product, ProductOut
+from src.schemas.product import CreateProduct, ProductOut
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -25,6 +23,7 @@ async def get_products_list(
     current_user: Annotated[str, Depends(PermissionChecker(["products:view"]))],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
+
     product_list = await get_all_products(session=session)
     return product_list
 
@@ -70,8 +69,8 @@ async def delete_product(
         current_user: Annotated[str, Depends(PermissionChecker(["products:delete"]))],
         session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
+
     product = await delete_product_by_id(product_id=product_id, session=session)
-    print(product)
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": f"Product '{product.name}' deleted"}

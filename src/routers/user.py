@@ -7,9 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config.database import db_handler
 from src.crud.user import create_new_user, get_all_users
 from src.crud.cart import create_cart
-from src.models.user import User
 from src.schemas.user import UserInfo, UserRegister, UserAuth
-from src.services.auth import AuthUserService
+from src.dependencies.auth import AuthUserDependencies
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -38,6 +37,6 @@ async def get_users(session: AsyncSession = Depends(db_handler.session_getter)):
 
 
 @router.get("/me", response_model=UserInfo)
-async def get_current_user_info(current_user: Annotated[UserAuth, Depends(AuthUserService.get_current_user)]):
+async def get_current_user_info(current_user: Annotated[UserAuth, Depends(AuthUserDependencies.get_current_user)]):
 
     return current_user

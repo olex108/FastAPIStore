@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.user import User, Role
 from src.schemas.user import UserRegister
-from src.services.security import PasswordHandler
+from src.utils.security import PasswordHandler
 
 debug_logger = logging.getLogger("debug")
 
@@ -57,11 +57,11 @@ async def get_user_by_phone(session: AsyncSession, phone: str) -> User | None:
     return result
 
 
-async def get_user_by_email_or_phone(session: AsyncSession, user_identity: str) -> User | None:
+async def get_user_by_email_or_phone(session: AsyncSession, user: str) -> User | None:
     query = select(User).where(
         or_(
-            User.phone == user_identity,
-            User.email == user_identity,
+            User.phone == user,
+            User.email == user,
         )
     )
     result = (await session.execute(query)).scalar_one_or_none()

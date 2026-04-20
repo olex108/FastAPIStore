@@ -10,28 +10,13 @@ from src.config.settings import get_settings
 from src.config.database import db_handler
 from src.crud.user import get_user_by_email_or_phone, get_user_perms
 from src.models.user import User
-from src.schemas.user import UserInfo
-from src.services.security import PasswordHandler
+from src.utils.security import PasswordHandler
 
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
-class AuthUserService:
-    @staticmethod
-    async def authenticate_user(session: AsyncSession, user_identity: str, password: str) -> Tuple[User, str] | None:
-        """
-        Метод для аутентификации пользователя
-        """
-
-        user = await get_user_by_email_or_phone(session=session, user_identity=user_identity)
-        if not user:
-            PasswordHandler.dammy_verify(password)
-            return None
-        else:
-            if not PasswordHandler.verify_password(password, user.hashed_password):
-                return None
-        return user, user_identity
+class AuthUserDependencies:
 
     @staticmethod
     async def get_current_user(
@@ -39,7 +24,7 @@ class AuthUserService:
         session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
     ) -> User:
         """
-        Метод для получения авторизированного пользователя
+        Зависимость для получения авторизированного пользователя
         """
 
         credentials_exception = HTTPException(
@@ -64,6 +49,10 @@ class AuthUserService:
     async def get_current_active_user(
         current_user: Annotated[User, Depends(get_current_user)],
     ) -> User:
+        """
+        Зависимость для получения авторизированного активного пользователя
+        """
+
         if not current_user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
