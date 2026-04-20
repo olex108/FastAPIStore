@@ -2,7 +2,7 @@ import logging
 from typing import Annotated, List
 
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,6 +46,18 @@ async def get_user_cart(user_id: int, session: Annotated[AsyncSession, Depends(d
         await session.rollback()
         debug_logger.error(f"--- Create cart failed: {e} ---")
         raise e
+
+
+async def get_cart_id_by_user_id(user_id: id, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> int | None:
+    query = (
+        select(Cart.id)
+        .where(
+            Cart.user_id == user_id,
+            Cart.status == CartStatus.CURRENT  # Ищем именно активную корзину
+        )
+    )
+    cart_id = (await session.execute(query)).scalar_one_or_none()
+    return cart_id
 
 
 async def add_product_to_cart(
@@ -115,4 +127,38 @@ async def add_products_list_to_cart(
     except IntegrityError as e:
         await session.rollback()
         debug_logger.error(f"--- Add product failed: {e} ---")
+        raise e
+
+
+async def delete_product_from_cart(product_id: int, cart_id: int, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> None:
+    query = (delete(CartProducts)
+        .where(
+            CartProducts.cart_id == cart_id,
+            CartProducts.product_id == product_id
+        )
+    )
+
+    try:
+        await session.execute(query)
+        await session.commit()
+        debug_logger.info(f"Delete product {product_id} from cart {cart_id}")
+    except IntegrityError as e:
+        await session.rollback()
+        debug_logger.error(f"--- Delete product failed: {e} ---")
+        raise e
+
+
+async def clear_cart_products(cart_id: int, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> None:
+    query = (delete(CartProducts)).where(
+        CartProducts.cart_id == cart_id,
+    )
+
+    try:
+        await session.execute(query)
+        await session.commit()
+        debug_logger.info(f"Clear cart products {cart_id}")
+
+    except IntegrityError as e:
+        await session.rollback()
+        debug_logger.error(f"--- Clear cart products failed: {e} ---")
         raise e

@@ -80,22 +80,13 @@ async def get_user_perms(session: AsyncSession, user_identity: str):
             )
         )
         .options(
-            selectinload(User.roles).selectinload(Role.permissions)
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.cart)
         )
     )
 
     user = (await session.execute(query)).scalar_one_or_none()
-    # if user:
-    #     print(f"--- Пользователь: {user.full_name} (ID: {user.id}) ---")
-    #
-    #     # Проверяем группы
-    #     print(f"Группы ({len(user.roles)}):")
-    #     for role in user.roles:
-    #         # Для каждой группы проверяем разрешения
-    #         perm_names = [p.name for p in role.permissions]
-    #         print(f" - Группа: {role.name} | Разрешения: {', '.join(perm_names)}")
-    # else:
-    #     print("Пользователь не найден")
+
     return user
 
 

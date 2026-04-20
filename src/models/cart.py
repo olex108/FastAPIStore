@@ -92,3 +92,42 @@ class CartProducts(Base):
             unique=True
         ),
     )
+
+
+class CartHistory(Base):
+    """
+    !!!!!! В разработке - не добавлен в __init__ для исключения миграций !!!!!!!!!!
+
+    Модель Истории Корзин для хранения данных о выполненных заказах пользователей
+    user_id: уникальное поле так как в одного пользователя должна быть одна корзина
+    user: связь с пользователем
+    products: список товаров в корзине
+    """
+
+    __tablename__ = "carts_history"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    order_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
+    order_amount: Mapped[int] = mapped_column(nullable=True, default=None)
+
+    # Обратные связи
+    # user: Mapped["User"] = relationship(back_populates="cart")
+    # products: Mapped[List["CartProducts"]] = relationship(
+    #     back_populates="cart",
+    # )
+
+    # __table_args__ = (
+    #     Index(
+    #         "idx_user_current_cart_unique",
+    #         user_id,
+    #         postgresql_where=(status == CartStatus.CURRENT.value),
+    #         unique=True
+    #     ),
+    # )
+
+    def __str__(self):
+        return f"{self.id} - {self.user_id} - {self.status}"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(id={self.id}, uerr_id={self.user_id}, status={self.status})"
