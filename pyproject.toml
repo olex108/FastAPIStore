@@ -21,7 +21,6 @@ dependencies = [
     "alembic (>=1.18.4,<2.0.0)",
     "fastapi-debug-toolbar (>=0.6.3,<0.7.0)",
     "pwdlib[argon2] (>=0.3.0,<0.4.0)",
-    "httpx (>=0.28.1,<0.29.0)"
 ]
 
 
@@ -39,6 +38,8 @@ isort = "^8.0.1"
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"
 pytest-cov = "^7.1.0"
+pytest-asyncio = "^1.3.0"
+httpx = "^0.28.1"
 
 [tool.mypy]
 disallow_untyped_defs = true
