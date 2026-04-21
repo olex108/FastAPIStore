@@ -1,0 +1,58 @@
+version: '3.11'
+
+services:
+  # Основная база данных
+  db:
+    image: postgres:17-alpine
+    container_name: store_db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Тестовая база данных
+  test_db:
+    image: postgres:17-alpine
+    container_name: store_test_db
+    environment:
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_password
+      - POSTGRES_DB=test_db
+    ports:
+      - "5433:5432"
+    healthcheck:
+      # Указываем конкретные значения, которые прописаны в environment выше
+      test: [ "CMD-SHELL", "pg_isready -U test_user -d test_db" ]
+      interval: 10s # Для тестов лучше сделать интервал почаще
+      timeout: 5s
+      retries: 5
+
+  # Само приложение
+  app:
+    build: .
+    container_name: fastapi_app
+    env_file: .env
+    ports:
+      - "2222:2222"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app # Монтируем код для autoreload
+    command: >
+      sh -c "alembic upgrade head && 
+             python src/main.py"
+
+volumes:
+  postgres_data:
