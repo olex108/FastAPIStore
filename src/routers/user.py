@@ -28,10 +28,14 @@ async def register_user(
     """
 
     try:
+        print("Stage", 1)
         new_user = await create_new_user(user=user, session=session)
+        print("Stage", 2)
         user_cart = await create_cart(new_user, session=session)
+        print("Stage", 3)
         return new_user
     except Exception as e:
+        print(f"DEBUG ERROR: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Не получается зарегистрировать пользователя",

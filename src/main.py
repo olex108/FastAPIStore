@@ -7,7 +7,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config.database import db_handler
+from src.config.database import db_handler
 from .config.logger import LOGGING_CONFIG
 from .config.settings import get_settings
 from .middlewares.access_logging import LogMiddleware
@@ -67,9 +67,6 @@ main_app.include_router(auth.router)
 main_app.include_router(cart.router)
 
 
-# print("Routers: ", main_app.routes)
-
-
 @main_app.get("/")
 def read_root():
     return {"message": "Hello, World!"}
@@ -78,4 +75,10 @@ def read_root():
 if __name__ == "__main__":
     settings = get_settings()
 
-    uvicorn.run("src.main:main_app", host=settings.HOST, port=settings.PORT, reload=True, log_config=LOGGING_CONFIG)
+    uvicorn.run(
+        "src.main:main_app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=True,
+        log_config=LOGGING_CONFIG
+    )
