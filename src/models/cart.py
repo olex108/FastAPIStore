@@ -3,6 +3,7 @@ from typing import List
 
 from sqlalchemy import ForeignKey, null, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Enum as SQLEnum
 
 from datetime import datetime
 
@@ -32,7 +33,11 @@ class Cart(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    status: Mapped[CartStatus] = mapped_column(default=CartStatus.CURRENT)
+    status: Mapped[CartStatus] = mapped_column(
+        SQLEnum(CartStatus, name="cartstatus"),  # Явно указываем имя типа для Postgres
+        default=CartStatus.CURRENT,
+        nullable=False
+    )
     order_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
     order_amount: Mapped[int] = mapped_column(nullable=True, default=None)
 

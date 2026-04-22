@@ -78,9 +78,11 @@ class DatabaseAsyncHandler(DatabaseHandler):
             pool_size=pool_size,
             max_overflow=max_overflow,
         )
+        print("TEST_DATABASE_URL", database_url)
         self.session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False, expire_on_commit=False
         )
+
 
     async def dispose(self) -> None:
         """Асинхронный метод для закрытия сессии"""
@@ -93,6 +95,8 @@ class DatabaseAsyncHandler(DatabaseHandler):
 
         debug_logger.debug("--- Database handler session_maker get ---")
         async with self.session_maker() as session:
+            print("TEST_SESSION")
+
             try:
                 yield session
             finally:
