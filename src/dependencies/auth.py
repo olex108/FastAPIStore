@@ -1,6 +1,8 @@
 from typing import Annotated, Tuple
 
 import jwt
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Security
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
@@ -13,19 +15,20 @@ from src.models.user import User
 from src.utils.security import PasswordHandler
 
 settings = get_settings()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+security = HTTPBearer()
 
 
 class AuthUserDependencies:
 
     @staticmethod
     async def get_current_user(
-        token: Annotated[str, Depends(oauth2_scheme)],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+            # Теперь получаем объект credentials, в котором лежит токен
+            auth: Annotated[HTTPAuthorizationCredentials, Security(security)],
+            session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
     ) -> User:
-        """
-        Зависимость для получения авторизированного пользователя
-        """
+
+        token = auth.credentials  # Извлекаем сам токен из объекта
 
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -40,6 +43,7 @@ class AuthUserDependencies:
                 raise credentials_exception
         except PyJWTError:
             raise credentials_exception
+
         user = await get_user_perms(session=session, user_identity=user_identity)
         if user is None:
             raise credentials_exception
