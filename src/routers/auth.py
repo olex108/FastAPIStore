@@ -42,7 +42,9 @@ async def login(
 
     try:
         # Получаем пользователя из базы данных
+        print(user)
         user_obj= await get_user_by_email_or_phone(session=session, user=user.user)
+        print(user_obj)
 
         if not user_obj:
             PasswordHandler.dammy_verify(user.password)
@@ -53,8 +55,10 @@ async def login(
 
         access_token = TokenHandler.create_access_token(data={"sub": user.user})
         refresh_token = TokenHandler.create_refresh_token(data={"sub": user.user})
+        print(access_token)
         # Записываем refresh_token в базу данных
         await create_refresh_session(user=user_obj, session=session, refresh_token=refresh_token)
+        print(refresh_token)
 
         return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 

@@ -20,7 +20,7 @@ router = APIRouter(prefix="/products", tags=["Products"])
 
 @router.get("/", name="products", response_model=List[ProductOut])
 async def get_products_list(
-    current_user: Annotated[str, Depends(PermissionChecker(["products:view"]))],
+    # current_user: Annotated[str, Depends(PermissionChecker(["products:view"]))],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
 

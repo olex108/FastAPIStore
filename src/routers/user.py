@@ -11,11 +11,13 @@ from src.crud.cart import create_cart
 from src.schemas.user import UserInfo, UserRegister, UserUpdate
 from src.dependencies.auth import AuthUserDependencies
 from src.dependencies.permissions import PermissionChecker
+from sqlalchemy.exc import IntegrityError
+
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post("/register", response_model=UserInfo)
+@router.post("/register", response_model=UserInfo, status_code=status.HTTP_201_CREATED)
 async def register_user(
     user: UserRegister,
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
@@ -28,14 +30,12 @@ async def register_user(
     """
 
     try:
-        print("Stage", 1)
         new_user = await create_new_user(user=user, session=session)
-        print("Stage", 2)
         user_cart = await create_cart(new_user, session=session)
-        print("Stage", 3)
         return new_user
-    except Exception as e:
-        print(f"DEBUG ERROR: {e}")
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail="User with this email or phone already exists")
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Не получается зарегистрировать пользователя",

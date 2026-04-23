@@ -10,9 +10,12 @@ async def create_refresh_session(user: User, refresh_token: str, session: AsyncS
         user_id=user.id,
         refresh_token=refresh_token,
     )
+    print("Pre commit")
     session.add(new_session)
     await session.commit()
+    print("Commit")
     await session.refresh(new_session)
+    print(new_session)
     return new_session
 
 

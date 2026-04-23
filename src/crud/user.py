@@ -17,7 +17,6 @@ debug_logger = logging.getLogger("debug")
 async def create_new_user(user: UserRegister, session: AsyncSession) -> User:
     data = user.model_dump(exclude={"confirm_password"})
     data["hashed_password"] = PasswordHandler.get_password_hash(data.pop("password"))
-
     # Убрать поле при добавлении системы верификации пользователя !!!!!!!!!!!!
     data["is_active"] = True
 
