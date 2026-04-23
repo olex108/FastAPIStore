@@ -71,14 +71,13 @@ class DatabaseAsyncHandler(DatabaseHandler):
         """Метод для инициализации движка и фабрики сессий"""
 
         debug_logger.debug("--- Database handler init ---")
-
         self.engine: AsyncEngine = create_async_engine(
             url=database_url,
             echo=echo,
             pool_size=pool_size,
             max_overflow=max_overflow,
         )
-        print("TEST_DATABASE_URL", database_url)
+
         self.session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False, expire_on_commit=False
         )
