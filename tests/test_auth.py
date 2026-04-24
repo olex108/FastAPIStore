@@ -1,5 +1,4 @@
 from copy import copy
-import json
 
 import pytest
 from httpx import AsyncClient
@@ -12,9 +11,11 @@ user_register_data = {
     "phone": "+79991234567",
     "password": "Password!",
     "full_name": "Test User",
-    "confirm_password": "Password!"
+    "confirm_password": "Password!",
 }
 
+
+@pytest.mark.asyncio
 async def test_register_user(ac):
     response = await ac.post("/users/register", json=user_register_data)
     assert response.status_code == status.HTTP_201_CREATED
@@ -23,101 +24,86 @@ async def test_register_user(ac):
     # тест для существующего пользователя
     response = await ac.post("/users/register", json=user_register_data)
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-#
-#
-# async def test_register_user_validators(ac):
-#     # invalid email
-#     email_reg_data = copy(user_register_data)
-#     email_reg_data["email"] = "testexample.com"
-#     response = await ac.post("/users/register", json=email_reg_data)
-#
-#     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-#     assert response.json()["detail"][0]["msg"] == "value is not a valid email address: An email address must have an @-sign."
-#
-#     # invalid phone
-#     phone_reg_data = copy(user_register_data)
-#     phone_reg_data["phone"] = "9991234567a"
-#     response = await ac.post("/users/register", json=phone_reg_data)
-#
-#     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-#     assert response.json()["detail"][0]["msg"] == "Value error, Номер телефона должен начинаться с +7"
-#
-#     # invalid password
-#     pass_reg_data = copy(user_register_data)
-#     pass_reg_data["password"] = "PASSWORD"
-#
-#     response = await ac.post("/users/register", json=pass_reg_data)
-#     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-#     assert response.json()["detail"][0]["msg"] == "Value error, Пароль должен содержать хотя бы один спецсимвол ($%&!:)"
-#
+
+
+@pytest.mark.asyncio
+async def test_register_user_validators(ac):
+    # invalid email
+    email_reg_data = copy(user_register_data)
+    email_reg_data["email"] = "testexample.com"
+    response = await ac.post("/users/register", json=email_reg_data)
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "value is not a valid email address: An email address must have an @-sign."
+    )
+
+    # invalid phone
+    phone_reg_data = copy(user_register_data)
+    phone_reg_data["phone"] = "9991234567a"
+    response = await ac.post("/users/register", json=phone_reg_data)
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.json()["detail"][0]["msg"] == "Value error, Номер телефона должен начинаться с +7"
+
+    # invalid password
+    pass_reg_data = copy(user_register_data)
+    pass_reg_data["password"] = "PASSWORD"
+
+    response = await ac.post("/users/register", json=pass_reg_data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert (
+        response.json()["detail"][0]["msg"] == "Value error, Пароль должен содержать хотя бы один спецсимвол ($%&!:)"
+    )
+
 
 async def register_user(ac):
-    user_data = {
-        "email": "test2@example.com",
-        "phone": "+79991234568",
-        "password": "Password!",
-        "full_name": "Test User",
-        "confirm_password": "Password!"
-    }
-    await ac.post("/users/register", json=user_data)
+    await ac.post("/users/register", json=user_register_data)
 
-#
+
+@pytest.mark.asyncio
 async def test_auth(ac):
-#     # ТЕСТ РЕГИСТРАЦИИ
-    user_data = {
-        "email": "test2@example.com",
-        "phone": "+79991234568",
-        "password": "Password!",
-        "full_name": "Test User",
-        "confirm_password": "Password!"
-    }
-# #
-#     reg_response = await ac.post("/users/register", json=user_data)
-#
-#     assert reg_response.status_code == 201
-#     assert reg_response.json()["email"] == user_data["email"]
-#
-#     # ТЕСТ ЛОГИНА
+    # Создаем пользователя
     await register_user(ac)
 
-    login_data = {
-        "user": user_data["email"],
-        "password": user_data["password"]
-    }
+    # ТЕСТ ЛОГИНА
+    login_data = {"user": user_register_data["email"], "password": user_register_data["password"]}
+
     login_response = await ac.post("/auth/login", json=login_data)
+
     assert login_response.status_code == 200
     tokens = login_response.json()
     assert "access_token" in tokens
     assert "refresh_token" in tokens
-    #
-    # refresh_token = tokens["refresh_token"]
-#
-#     # --- 3. ТЕСТ REFRESH TOKEN ---
-#     # Передаем refresh_token в заголовке, как требует твой эндпоинт
-#     refresh_response = await ac.post(
-#         "/auth/refresh",
-#         headers={"refresh-token": refresh_token}
-#     )
-#     assert refresh_response.status_code == 200
-#     assert "access_token" in refresh_response.json()
-#
-#
 
-# async def test_login_wrong_password(ac):
-#     """Тест на неверный пароль (проверка 401 ошибки)"""
-#     login_data = {
-#         "user": "test@example.com",
-#         "password": "wrong_password"
-#     }
-#     response = await ac.post("/auth/login", json=login_data)
-#     assert response.status_code == 401
-#     assert response.json()["detail"] == "Incorrect email, phone or password"
-#
-#
-# @pytest.mark.asyncio
-# async def test_refresh_invalid_token(ac: AsyncClient):
-#     response = await ac.post(
-#         "/auth/refresh",
-#         headers={"refresh-token": "not-a-real-token"}
-#     )
-#     assert response.status_code == 401
+    refresh_token = tokens["refresh_token"]
+
+    # --- 3. ТЕСТ REFRESH TOKEN ---
+    # Передаем refresh_token в заголовке, как требует твой эндпоинт
+    refresh_response = await ac.post("/auth/refresh", headers={"refresh-token": refresh_token})
+    assert refresh_response.status_code == 200
+    assert "access_token" in refresh_response.json()
+
+
+@pytest.mark.asyncio
+async def test_login_wrong_email(ac):
+    login_data = {"user": "test@example.com", "password": "wrong_password"}
+    response = await ac.post("/auth/login", json=login_data)
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect email, phone or password"
+
+
+@pytest.mark.asyncio
+async def test_login_wrong_password(ac):
+    await register_user(ac)
+    login_data = {"user": "test@example.com", "password": "wrong_password"}
+    response = await ac.post("/auth/login", json=login_data)
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect email, phone or password"
+
+
+@pytest.mark.asyncio
+async def test_refresh_invalid_token(ac: AsyncClient):
+    response = await ac.post("/auth/refresh", headers={"refresh-token": "not-a-real-token"})
+    assert response.status_code == 401
