@@ -1,115 +1,115 @@
-from httpx import AsyncClient, ASGITransport
+# conftest.py
 
 from src.config.database import db_handler
 from src.models.base import Base
-
-
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from httpx import AsyncClient
-
+import asyncio
 from src.main import main_app
-from sqlalchemy.pool import NullPool
-
 import pytest
+from typing import AsyncGenerator
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
+from sqlalchemy.pool import NullPool
+import sqlalchemy as sa
+
+from src.models.user import Permission, Role, User
+from src.utils.security import TokenHandler  # Импортируйте ваш обработчик
+
+
+# Используем SQLite в памяти для простоты тестов, либо другую тестовую БД Postgres
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:ae35ad@localhost:5432/test_db"
 
+engine_test = create_async_engine(
+    TEST_DATABASE_URL,
+    poolclass=NullPool,
+)
 
-@pytest.fixture(scope="session")
-def anyio_backend():
-    return "asyncio"
+async_session_maker = async_sessionmaker(engine_test, expire_on_commit=False)
 
 
-@pytest.fixture(scope="session")
-async def engine():
-    # NullPool предотвращает утечки соединений между тестами
-    engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
-    async with engine.begin() as conn:
+# Переопределяем зависимость сессии для FastAPI
+async def override_get_async_session():
+    async with async_session_maker() as session:
+        yield session
+
+
+main_app.dependency_overrides[db_handler.session_getter] = override_get_async_session
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def prepare_database():
+    # Создаем таблицы
+    async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    async with engine.begin() as conn:
-        print("Pre commit")
-        conn.run_sync(Base.metadata.drop_all)
-        print("Pre commit")
-    #     await conn.run_sync(Base.metadata.drop_all)
-    # await engine.dispose()
+    yield
+    # Удаляем таблицы и ПРИНУДИТЕЛЬНО закрываем соединения
+    async with engine_test.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine_test.dispose()
 
+
+@pytest.fixture(scope="session")
+async def ac() -> AsyncGenerator[AsyncClient, None]:
+    async with AsyncClient(transport=ASGITransport(app=main_app), base_url="http://test") as ac:
+        yield ac
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def clean_tables():
+    """Фикстура очистки данных во всех таблицах перед каждым тестом."""
+    yield  # Сначала выполняется сам тест
+
+    # После теста очищаем данные
+    async with engine_test.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(sa.text(f"TRUNCATE {table.name} CASCADE;"))
+
+# ФИКСТУРЫ ДАННЫХ
+
+# Сборка дерева прав пользователя
+@pytest.fixture
+async def create_permission(session: AsyncSession):
+    async def _create(name: str):
+        perm = Permission(name=name)
+        session.add(perm)
+        await session.commit()
+        return perm
+    return _create
 
 @pytest.fixture
-async def ac(engine):
-    session_factory = async_sessionmaker(bind=engine, expire_on_commit=False)
-
-    # Создаем одну сессию на весь тест
-    async with session_factory() as session:
-        # ПРЯМАЯ ПОДМЕНА: перехватываем зависимость
-        main_app.dependency_overrides[db_handler.session_getter] = lambda: session
-
-        # Используем транспорт БЕЗ lifespan (критично для тестов)
-        async with AsyncClient(
-                transport=ASGITransport(app=main_app),
-                base_url="http://test"
-        ) as client:
-            yield client
-
-        main_app.dependency_overrides.clear()
+async def create_role(session: AsyncSession):
+    async def _create(name: str, permissions: list = None):
+        role = Role(name=name)
+        if permissions:
+            role.permissions = permissions
+        session.add(role)
+        await session.commit()
+        return role
+    return _create
 
 
+# Фикстура авторизации
+@pytest.fixture
+async def auth_headers():
+    """
+    Создает пользователя и возвращает заголовок с токеном.
+    Используем фабрику сессий напрямую, чтобы избежать проблем с loop.
+    """
+    # Создаем сессию через вашу рабочую фабрику
+    async with async_session_maker() as session:
+        user = User(
+            full_name="Test User",
+            email="test@example.com",
+            phone="+79991234567",
+            hashed_password="fake_hash",
+            is_active=True
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
 
-# # @pytest.fixture(scope="session")
-# # def event_loop():
-# #     loop = asyncio.get_event_loop_policy().new_event_loop()
-# #     yield loop
-# #     loop.close()
-#
-# @pytest.fixture(scope="session")
-# async def engine():
-#     engine = create_async_engine(
-#         TEST_DATABASE_URL,
-#         poolclass=StaticPool,
-#         echo=False
-#     )
-#     from src.config.database import db_handler
-#     db_handler.engine = engine
-#
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.drop_all)
-#         await conn.run_sync(Base.metadata.create_all)
-#     yield engine
-#     await engine.dispose()
-#
-# # @pytest.fixture
-# # async def session(engine):
-# #     """Фикстура создает изолированную сессию для каждого теста"""
-# #     Session = async_sessionmaker(bind=engine, expire_on_commit=False)
-# #     print("!!!! Session: ",Session)
-# #     async with Session() as session:
-# #         yield session
-#
-#
-# @pytest.fixture
-# async def ac(engine):
-
-#     main_app.user_middleware = []
-#     main_app.middleware_stack = main_app.build_middleware_stack()
-#     main_app.router.lifespan_context = None
-#
-#     session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
-#
-#     async with session_maker() as session:
-#         async def _override_get_db():
-#             yield session
-#
-#     # Заменяем оригинальную зависимость на нашу локальную
-#
-#     from src.config.database import db_handler
-#     main_app.dependency_overrides[db_handler.session_getter] = _override_get_db
-#
-#     async with AsyncClient(
-#             transport=ASGITransport(app=main_app),
-#             base_url="http://test"
-#     ) as client:
-#         yield client
-#
-#     # main_app.dependency_overrides.clear()
+        # Генерируем токен
+        token = TokenHandler.create_access_token(data={"sub": user.email})
+        return {"Authorization": f"Bearer {token}"}
 
