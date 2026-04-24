@@ -37,7 +37,37 @@ TARGET_ROLES = [
     "Customer",
 ]
 
-async def sync_all():
+TARGET_PERMISSIONS_ROLES = {
+    "Admin": [
+        "products:view",
+        "products:create",
+        "products:update",
+        "products:delete",
+
+        "users:view",
+        "users:update",
+        "users:delete",
+
+        "carts:view",
+        "carts:update",
+        "carts:delete",
+    ],
+    "Manager": [
+        "products:view",
+        "products:update",
+
+        "users:view",
+
+        "carts:view",
+        "carts:update",
+        "carts:delete",
+    ],
+    "Customer": [
+        "products:view",
+    ]
+}
+
+async def default_settings():
     # Получаем сессию один раз для всех действий
     async for session in db_handler.session_getter():
         try:
@@ -63,6 +93,37 @@ async def sync_all():
                     session.add(Role(name=r_name))
                     print(f"Добавлена роль: {r_name}")
 
+            # --- 3. Синхронизация разрешений для ролей ---
+            print("--- Синхронизация разрешений для ролей ---")
+
+            # Сначала фиксируем добавленные роли и права в БД, чтобы получить их ID
+            await session.flush()
+
+            # Удаляем старые связи
+            await session.execute(delete(RolePermissions))
+
+            # Получаем маппинг имен к ID
+            res_roles = await session.execute(select(Role))
+            roles_map = {r.name: r.id for r in res_roles.scalars().all()}
+
+            res_perms = await session.execute(select(Permission))
+            perms_map = {p.name: p.id for p in res_perms.scalars().all()}
+
+            # Заполняем таблицу связей
+            for role_name, perms_list in TARGET_PERMISSIONS_ROLES.items():
+                role_id = roles_map.get(role_name)
+
+                if not role_id:
+                    continue
+
+                for p_name in perms_list:
+                    perm_id = perms_map.get(p_name)
+                    if perm_id:
+                        session.add(RolePermissions(role_id=role_id, permission_id=perm_id))
+
+            print("Связи ролей и разрешений обновлены")
+
+
             # Фиксируем всё одним коммитом
             await session.commit()
             print("✅ Все данные успешно синхронизированы!")
@@ -75,5 +136,4 @@ async def sync_all():
 
 
 if __name__ == "__main__":
-    # ЗАПУСКАЕМ ТОЛЬКО ОДИН РАЗ
-    asyncio.run(sync_all())
+    asyncio.run(default_settings())

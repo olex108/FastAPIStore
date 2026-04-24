@@ -1,3 +1,4 @@
+# scripts/manage_role_perms.py
 from src.config.settings import get_settings
 import asyncio
 from sqlalchemy import select, delete

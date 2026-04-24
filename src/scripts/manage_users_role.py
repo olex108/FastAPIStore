@@ -1,3 +1,5 @@
+# scripts/manage_users_role.py
+
 import asyncio
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
