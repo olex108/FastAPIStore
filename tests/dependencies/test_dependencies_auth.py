@@ -6,6 +6,7 @@ from src.models import User
 from src.utils.security import TokenHandler
 from tests.conftest import async_session_maker
 
+
 @pytest.mark.asyncio
 async def test_get_current_user_logic(auth_headers):
     from src.dependencies.auth import AuthUserDependencies
@@ -32,11 +33,7 @@ from src.models.user import User
 async def test_get_current_active_user_success():
     """Проверка: активный пользователь проходит успешно"""
     # Создаем мок-объект пользователя (в памяти, без БД)
-    mock_user = User(
-        full_name="Active User",
-        email="active@test.com",
-        is_active=True
-    )
+    mock_user = User(full_name="Active User", email="active@test.com", is_active=True)
 
     # Вызываем метод напрямую
     result = await AuthUserDependencies.get_current_active_user(current_user=mock_user)
@@ -48,11 +45,7 @@ async def test_get_current_active_user_success():
 @pytest.mark.asyncio
 async def test_get_current_active_user_inactive():
     """Проверка: неактивный пользователь вызывает 403 ошибку"""
-    mock_user = User(
-        full_name="Inactive User",
-        email="inactive@test.com",
-        is_active=False
-    )
+    mock_user = User(full_name="Inactive User", email="inactive@test.com", is_active=False)
 
     # Проверяем, что вызывается HTTPException
     with pytest.raises(HTTPException) as excinfo:
