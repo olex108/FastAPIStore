@@ -94,12 +94,7 @@ class DatabaseAsyncHandler(DatabaseHandler):
 
         debug_logger.debug("--- Database handler session_maker get ---")
         async with self.session_maker() as session:
-            print("TEST_SESSION")
-
-            try:
-                yield session
-            finally:
-                await session.close()
+            yield session
 
 
 db_handler = DatabaseAsyncHandler()

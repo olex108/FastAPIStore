@@ -28,6 +28,7 @@ class Base(DeclarativeBase):
 
 
 # Импортируем модели для инициализации при миграциях
-# from .cart import Cart
+# from .auth import RefreshSession
+# from .cart import Cart, CartProducts
 # from .product import Product
-# from .user import User
+# from .user import Role, RoleUsers, User, Permission, RolePermissions

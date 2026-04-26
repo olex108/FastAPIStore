@@ -20,7 +20,7 @@ router = APIRouter(prefix="/products", tags=["Products"])
 
 @router.get("/", name="products", response_model=List[ProductOut])
 async def get_products_list(
-    # current_user: Annotated[str, Depends(PermissionChecker(["products:view"]))],
+    current_user: Annotated[str, Depends(PermissionChecker(["products:view"]))],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
 
@@ -34,6 +34,7 @@ async def get_product(
     current_user: Annotated[str, Depends(PermissionChecker(["products:view"]))],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
+
     product = await get_product_by_id(product_id=product_id, session=session)
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -57,6 +58,7 @@ async def update_product(
     current_user: Annotated[str, Depends(PermissionChecker(["products:update"]))],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
+
     updated_product = await update_product_by_id(product=product, product_id=product_id, session=session)
     if updated_product is None:
         raise HTTPException(status_code=404, detail="Product not found")
