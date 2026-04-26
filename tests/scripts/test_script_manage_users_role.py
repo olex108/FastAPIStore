@@ -12,6 +12,7 @@ from src.config.database import db_handler
 async def seed_users_data(prepare_database):
     """Наполняем базу ролями и пользователями согласно актуальной модели User"""
     from tests.conftest import async_session_maker
+
     async with async_session_maker() as session:
         role = Role(name="Admin")
 
@@ -21,14 +22,14 @@ async def seed_users_data(prepare_database):
             email="ivan@test.com",
             phone="+79991112233",
             hashed_password="fake_hash_1",
-            is_active=True
+            is_active=True,
         )
         user2 = User(
             full_name="Petr Petrov",
             email="petr@test.com",
             phone="+79994445566",
             hashed_password="fake_hash_2",
-            is_active=True
+            is_active=True,
         )
 
         session.add_all([role, user1, user2])
@@ -53,6 +54,7 @@ async def test_add_user_to_role_by_phone_logic(seed_users_data, monkeypatch):
     async def mock_session_getter():
         async with async_session_maker() as session:
             yield session
+
     monkeypatch.setattr(db_handler, "session_getter", mock_session_getter)
 
     # Ввод: ID роли -> '+' -> ID юзера (через isdigit()) -> 'b' -> '0'
@@ -63,12 +65,10 @@ async def test_add_user_to_role_by_phone_logic(seed_users_data, monkeypatch):
 
     async with async_session_maker() as session:
         res = await session.execute(
-            select(RoleUsers).where(
-                RoleUsers.role_id == role.id,
-                RoleUsers.user_id == user2.id
-            )
+            select(RoleUsers).where(RoleUsers.role_id == role.id, RoleUsers.user_id == user2.id)
         )
         assert res.scalar_one_or_none() is not None
+
 
 @pytest.mark.asyncio
 async def test_add_user_to_role_by_email(seed_users_data, monkeypatch):
@@ -78,6 +78,7 @@ async def test_add_user_to_role_by_email(seed_users_data, monkeypatch):
     async def mock_session_getter():
         async with async_session_maker() as session:
             yield session
+
     monkeypatch.setattr(db_handler, "session_getter", mock_session_getter)
 
     user_inputs = [str(role.id), "+", user1.email, "b", "0"]
@@ -88,8 +89,7 @@ async def test_add_user_to_role_by_email(seed_users_data, monkeypatch):
     async with async_session_maker() as session:
         res = await session.execute(
             select(RoleUsers).where(
-                RoleUsers.user_id == user1.id,  # Исправлено здесь
-                RoleUsers.role_id == role.id    # Исправлено здесь
+                RoleUsers.user_id == user1.id, RoleUsers.role_id == role.id  # Исправлено здесь  # Исправлено здесь
             )
         )
         assert res.scalar_one_or_none() is not None
