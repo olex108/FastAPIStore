@@ -1,24 +1,21 @@
 import logging
 from typing import Annotated, List
 
-from fastapi import Depends
 from sqlalchemy import select, delete
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.config.database import db_handler
 from src.models.user import User
 from src.models.cart import Cart, CartProducts, CartStatus
-from src.models.product import Product
 from src.schemas.cart import ProductAdd
 
 
 debug_logger = logging.getLogger("debug")
 
 
-async def create_cart(user: User, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> None:
+async def create_cart(user: User, session: AsyncSession) -> None:
     try:
         new_cart = Cart(user_id=user.id)
         session.add(new_cart)
@@ -27,10 +24,10 @@ async def create_cart(user: User, session: Annotated[AsyncSession, Depends(db_ha
 
     except Exception as e:
         await session.rollback()
-        debug_logger.error(f"--- Create cart failed: {e} ---")
+        debug_logger.error(f"--- Create cart failed: {e.args} ---")
         raise e
 
-async def get_user_cart(user_id: int, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> Cart:
+async def get_user_cart(user_id: int, session: AsyncSession) -> Cart:
     try:
         query = (
             select(Cart).where(
@@ -44,25 +41,31 @@ async def get_user_cart(user_id: int, session: Annotated[AsyncSession, Depends(d
         return result
     except Exception as e:
         await session.rollback()
-        debug_logger.error(f"--- Create cart failed: {e} ---")
+        debug_logger.error(f"--- Create cart failed: {e.args} ---")
         raise e
 
 
-async def get_cart_id_by_user_id(user_id: id, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> int | None:
-    query = (
-        select(Cart.id)
-        .where(
-            Cart.user_id == user_id,
-            Cart.status == CartStatus.CURRENT  # Ищем именно активную корзину
-        )
-    )
-    cart_id = (await session.execute(query)).scalar_one_or_none()
-    return cart_id
+# async def get_cart_id_by_user_id(user_id: id, session: AsyncSession) -> int | None:
+#     """
+#     Запрос на получение корзины по user_id
+#     Ищем именно активную корзину
+#     """
+#
+#     query = (
+#         select(Cart.id)
+#         .where(
+#             Cart.user_id == user_id,
+#             Cart.status == CartStatus.CURRENT
+#         )
+#     )
+#     cart_id = (await session.execute(query)).scalar_one_or_none()
+#     return cart_id
 
 
 async def add_product_to_cart(
+        cart_id: int,
         product: ProductAdd,
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+        session: AsyncSession
 ) -> None:
     """
     Функция для добавления продукта в корзину.
@@ -71,7 +74,7 @@ async def add_product_to_cart(
     """
 
     new_product = {
-        "cart_id": product.cart_id,
+        "cart_id": cart_id,
         "product_id": product.product_id,
         "product_quantity": product.product_quantity,
     }
@@ -90,13 +93,14 @@ async def add_product_to_cart(
         debug_logger.info(f"Add product {product.product_id}")
     except Exception as e:
         await session.rollback()
-        debug_logger.error(f"--- Add product failed: {e} ---")
+        debug_logger.error(f"--- Add product failed: {e.args} ---")
         raise e
 
 
 async def add_products_list_to_cart(
+        cart_id: int,
         products_list: List[ProductAdd],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+        session: AsyncSession
 ) -> None:
     """
     Функция для добавления списка продуктов в корзину.
@@ -106,7 +110,7 @@ async def add_products_list_to_cart(
 
     new_products = [
         {
-            "cart_id": product.cart_id,
+            "cart_id": cart_id,
             "product_id": product.product_id,
             "product_quantity": product.product_quantity,
         }
@@ -126,11 +130,11 @@ async def add_products_list_to_cart(
         debug_logger.info(f"Add products list with {len(products_list)} products")
     except IntegrityError as e:
         await session.rollback()
-        debug_logger.error(f"--- Add product failed: {e} ---")
+        debug_logger.error(f"--- Add product failed: {e.args} ---")
         raise e
 
 
-async def delete_product_from_cart(product_id: int, cart_id: int, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> None:
+async def delete_product_from_cart(product_id: int, cart_id: int, session: AsyncSession) -> None:
     query = (delete(CartProducts)
         .where(
             CartProducts.cart_id == cart_id,
@@ -144,11 +148,11 @@ async def delete_product_from_cart(product_id: int, cart_id: int, session: Annot
         debug_logger.info(f"Delete product {product_id} from cart {cart_id}")
     except IntegrityError as e:
         await session.rollback()
-        debug_logger.error(f"--- Delete product failed: {e} ---")
+        debug_logger.error(f"--- Delete product failed: {e.args} ---")
         raise e
 
 
-async def clear_cart_products(cart_id: int, session: Annotated[AsyncSession, Depends(db_handler.session_getter)]) -> None:
+async def clear_cart_products(cart_id: int, session: AsyncSession) -> None:
     query = (delete(CartProducts)).where(
         CartProducts.cart_id == cart_id,
     )
@@ -160,5 +164,5 @@ async def clear_cart_products(cart_id: int, session: Annotated[AsyncSession, Dep
 
     except IntegrityError as e:
         await session.rollback()
-        debug_logger.error(f"--- Clear cart products failed: {e} ---")
+        debug_logger.error(f"--- Clear cart products failed: {e.args} ---")
         raise e

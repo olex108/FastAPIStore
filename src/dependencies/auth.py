@@ -1,21 +1,19 @@
-from typing import Annotated, Tuple
+# dependencies/auth.py
+from typing import Annotated
 
 import jwt
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Security
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config.settings import get_settings
 from src.config.database import db_handler
-from src.crud.user import get_user_by_email_or_phone, get_user_perms
+from src.crud.user import get_user_perms
 from src.models.user import User
-from src.utils.security import PasswordHandler
 
 settings = get_settings()
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 security = HTTPBearer()
 
 
@@ -27,6 +25,9 @@ class AuthUserDependencies:
             auth: Annotated[HTTPAuthorizationCredentials, Security(security)],
             session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
     ) -> User:
+        """
+        Зависимость для получения пользователя
+        """
 
         token = auth.credentials  # Извлекаем сам токен из объекта
 

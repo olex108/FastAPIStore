@@ -1,7 +1,7 @@
 import logging
 from typing import Sequence
 
-from fastapi import HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
@@ -9,31 +9,37 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.user import User, Role
 from src.schemas.user import UserRegister
-from src.utils.security import PasswordHandler
 
 debug_logger = logging.getLogger("debug")
 
 
-async def create_new_user(user: UserRegister, session: AsyncSession) -> User:
-    data = user.model_dump(exclude={"confirm_password"})
-    data["hashed_password"] = PasswordHandler.get_password_hash(data.pop("password"))
-    # Убрать поле при добавлении системы верификации пользователя !!!!!!!!!!!!
-    data["is_active"] = True
+exception_user_exist = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="User with this email or phone already exists"
+)
+exception_register_error = HTTPException(
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    detail="Не получается зарегистрировать пользователя",
+)
 
-    new_user = User(**data)
+
+async def create_new_user(user: dict, session: AsyncSession) -> User:
+
+    new_user = User(**user)
     session.add(new_user)
+
     try:
         await session.commit()
         await session.refresh(new_user)
         debug_logger.info(f"Created new user {new_user}")
     except IntegrityError as e:
         await session.rollback()
-        debug_logger.debug(f"--- Create user failed (IntegrityError): {e} ---")
-        raise HTTPException(status_code=400, detail="User with this email already exists")
+        debug_logger.warning(f"--- Create user failed (IntegrityError): {e.args} ---")
+        raise exception_user_exist
     except Exception as e:
         await session.rollback()
-        debug_logger.error(f"--- Create user failed: {e} ---")
-        raise e
+        debug_logger.error(f"--- Create user failed: {e.args} ---")
+        raise exception_register_error
 
     return new_user
 
@@ -44,16 +50,16 @@ async def get_all_users(session: AsyncSession) -> Sequence[User]:
     return result.all()
 
 
-async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
-    query = select(User).where(User.email == email)
-    result = (await session.execute(query)).scalar_one_or_none()
-    return result
-
-
-async def get_user_by_phone(session: AsyncSession, phone: str) -> User | None:
-    query = select(User).where(User.phone == phone)
-    result = (await session.execute(query)).scalar_one_or_none()
-    return result
+# async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
+#     query = select(User).where(User.email == email)
+#     result = (await session.execute(query)).scalar_one_or_none()
+#     return result
+#
+#
+# async def get_user_by_phone(session: AsyncSession, phone: str) -> User | None:
+#     query = select(User).where(User.phone == phone)
+#     result = (await session.execute(query)).scalar_one_or_none()
+#     return result
 
 
 async def get_user_by_email_or_phone(session: AsyncSession, user: str) -> User | None:

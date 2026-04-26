@@ -3,7 +3,6 @@ import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
-# from debug_toolbar.middleware import DebugToolbarMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -43,17 +42,19 @@ async def lifespan(app: FastAPI):
     await db_handler.dispose()
 
 
-main_app = FastAPI(lifespan=lifespan)
+main_app = FastAPI(
+    lifespan=lifespan
+)
 
 # Добавляем middleware
-main_app.add_middleware(LogMiddleware)
-main_app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# main_app.add_middleware(LogMiddleware)
+# main_app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 # if settings.DEBUG and settings.DEBUG_TOOLBAR:
 #     main_app.add_middleware(
 #         DebugToolbarMiddleware,

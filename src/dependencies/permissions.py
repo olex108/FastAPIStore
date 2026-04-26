@@ -1,3 +1,4 @@
+# dependencies/permissions.py
 from fastapi import Depends, HTTPException, status
 from typing import List, Annotated
 from src.models import User

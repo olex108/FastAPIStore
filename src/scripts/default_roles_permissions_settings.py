@@ -54,7 +54,6 @@ TARGET_PERMISSIONS_ROLES = {
     ],
     "Manager": [
         "products:view",
-        "products:update",
 
         "users:view",
 

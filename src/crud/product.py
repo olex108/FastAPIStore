@@ -18,7 +18,7 @@ async def create_product(new_product: CreateProduct, session: AsyncSession) -> P
         await session.refresh(product)
     except Exception as e:
         await session.rollback()
-        debug_logger.debug(f"--- Create product failed: {e} ---")
+        debug_logger.error(f"--- Create product failed: {e.args} ---")
         raise e
     return product
 
@@ -48,7 +48,7 @@ async def update_product_by_id(product: CreateProduct, product_id: int, session:
         await session.refresh(db_product)
         return db_product
     except Exception as e:
-        debug_logger.debug(f"--- Update product failed: {e} ---")
+        debug_logger.error(f"--- Update product failed: {e.args} ---")
         return None
 
 
@@ -65,5 +65,5 @@ async def delete_product_by_id(
         await session.commit()
         return db_product
     except Exception as e:
-        debug_logger.debug(f"--- Delete product failed: {e} ---")
+        debug_logger.error(f"--- Delete product failed: {e.args} ---")
         return None
