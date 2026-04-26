@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -19,7 +20,16 @@ class CreateProduct(BaseModel):
     is_active: bool = True
 
 
-class ProductOut(Product):
+class ProductOut(BaseModel):
     id: int
+    name: str
+    price: int
+    quantity: int
+    is_active: bool
 
     model_config = {"from_attributes": True}
+
+
+class ProductPaginationOut(BaseModel):
+    items: List[ProductOut]
+    next_cursor: Optional[str]
