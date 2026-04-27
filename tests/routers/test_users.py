@@ -1,8 +1,9 @@
 import pytest
 from httpx import AsyncClient
-from src.main import main_app
-from src.dependencies.permissions import PermissionChecker
+
 from src.dependencies.auth import AuthUserDependencies
+from src.dependencies.permissions import PermissionChecker
+from src.main import main_app
 from src.models.user import User
 from tests.conftest import async_session_maker, get_mock_user
 
@@ -20,7 +21,8 @@ async def test_get_users(ac: AsyncClient):
     response = await ac.get("/users/")
 
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
+    assert response.json()["next_cursor"] is None
+    assert isinstance(response.json()["items"], list)
 
 
 @pytest.mark.asyncio
@@ -50,7 +52,7 @@ async def test_get_user_by_id(ac: AsyncClient):
             email="target@test.com",
             phone="+72222222222",
             hashed_password="fake",
-            is_active=True
+            is_active=True,
         )
         session.add(new_user)
         await session.commit()

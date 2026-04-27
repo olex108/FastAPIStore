@@ -1,12 +1,14 @@
 import pytest
 from httpx import AsyncClient
-from src.main import main_app
+
 from src.dependencies.auth import AuthUserDependencies
 from src.dependencies.permissions import OwnerOrPermissionChecker
-from src.models.user import User
-from src.models.product import Product
+from src.main import main_app
 from src.models.cart import Cart, CartProducts, CartStatus
+from src.models.product import Product
+from src.models.user import User
 from tests.conftest import async_session_maker, get_mock_user
+import src.routers.cart as cart_router
 
 
 @pytest.mark.asyncio
@@ -14,7 +16,9 @@ async def test_get_current_user_cart_me(ac: AsyncClient):
     # 1. Создаем структуру данных в БД
     async with async_session_maker() as session:
         # Пользователь
-        user = User(full_name="Cart Owner", email="cart@test.com", phone="+71111111111", hashed_password="test", is_active=True)
+        user = User(
+            full_name="Cart Owner", email="cart@test.com", phone="+71111111111", hashed_password="test", is_active=True
+        )
         session.add(user)
         await session.flush()  # Получаем user.id
 
@@ -57,7 +61,9 @@ async def test_get_current_user_cart_me(ac: AsyncClient):
 async def test_get_cart_by_user_id_as_admin(ac: AsyncClient):
     # 1. Создаем корзину чужого пользователя
     async with async_session_maker() as session:
-        other_user = User(full_name="Other", email="other@test.com", phone="+72222222222", hashed_password="test", is_active=True)
+        other_user = User(
+            full_name="Other", email="other@test.com", phone="+72222222222", hashed_password="test", is_active=True
+        )
         session.add(other_user)
         await session.flush()
 
@@ -77,10 +83,6 @@ async def test_get_cart_by_user_id_as_admin(ac: AsyncClient):
 
     assert response.status_code == 200
     assert response.json()["user_id"] == other_user_id
-
-
-from unittest.mock import AsyncMock
-import src.routers.cart as cart_router  # Импортируем модуль роутера для патчинга
 
 
 @pytest.mark.asyncio
@@ -137,7 +139,9 @@ async def test_add_product_to_me_success(ac: AsyncClient):
 async def test_add_user_product_by_id_success(ac: AsyncClient):
     """Тест добавления товара в корзину по user_id (админом или владельцем)"""
     async with async_session_maker() as session:
-        target_user = User(full_name="Target", email="t@t.com", phone="+72222222222", hashed_password="f", is_active=True)
+        target_user = User(
+            full_name="Target", email="t@t.com", phone="+72222222222", hashed_password="f", is_active=True
+        )
         session.add(target_user)
         await session.flush()
 
@@ -187,17 +191,10 @@ async def test_add_products_list_to_me_success(ac: AsyncClient):
     main_app.dependency_overrides[OwnerOrPermissionChecker] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_active_user] = lambda: mock_user
 
-    payload = [
-        {"product_id": p1.id, "product_quantity": 1},
-        {"product_id": p2.id, "product_quantity": 3}
-    ]
+    payload = [{"product_id": p1.id, "product_quantity": 1}, {"product_id": p2.id, "product_quantity": 3}]
 
     # Добавляем params={"user_id": user.id}, чтобы удовлетворить сигнатуру OwnerOrPermissionChecker
-    response = await ac.post(
-        "/cart/me/add_products",
-        json=payload,
-        params={"user_id": user.id}
-    )
+    response = await ac.post("/cart/me/add_products", json=payload, params={"user_id": user.id})
 
     assert response.status_code == 200
     data = response.json()
@@ -205,14 +202,14 @@ async def test_add_products_list_to_me_success(ac: AsyncClient):
     assert data["amount"] == 70.0  # (10*1) + (20*3)
 
 
-
 @pytest.mark.asyncio
 async def test_add_products_list_success(ac: AsyncClient):
     """Тест добавления списка товаров в корзину текущего пользователя"""
 
     async with async_session_maker() as session:
-        user = User(full_name="Cart Owner", email="cart@test.com", phone="+71111111111", hashed_password="test",
-                    is_active=True)
+        user = User(
+            full_name="Cart Owner", email="cart@test.com", phone="+71111111111", hashed_password="test", is_active=True
+        )
         session.add(user)
         await session.commit()
         await session.rollback()  # Получаем user.id
@@ -223,13 +220,11 @@ async def test_add_products_list_success(ac: AsyncClient):
         await session.commit()
         await session.rollback()
 
-
         p1 = Product(name="P1", price=10, quantity=10, is_active=True)
         p2 = Product(name="P2", price=20, quantity=10, is_active=True)
         session.add_all([p1, p2])
         await session.commit()
 
-        user_id, cart_id = user.id, cart.id
         p1_id, p2_id = p1.id, p2.id
 
     mock_user = user
@@ -238,10 +233,7 @@ async def test_add_products_list_success(ac: AsyncClient):
     main_app.dependency_overrides[AuthUserDependencies.get_current_active_user] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_user
 
-    payload = [
-        {"product_id": p1_id, "product_quantity": 2},
-        {"product_id": p2_id, "product_quantity": 5}
-    ]
+    payload = [{"product_id": p1_id, "product_quantity": 2}, {"product_id": p2_id, "product_quantity": 5}]
 
     response = await ac.post("/cart/me/add_products", json=payload)
 

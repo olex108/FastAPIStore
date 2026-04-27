@@ -1,30 +1,25 @@
 # conftest.py
-from src.config.database import db_handler
-from src.dependencies.auth import AuthUserDependencies
-from src.models import User
-from src.models.base import Base
-import asyncio
-from src.main import main_app
-import pytest
+import os
 from typing import AsyncGenerator
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-from sqlalchemy.pool import NullPool
+import pytest
 import sqlalchemy as sa
+from dotenv import load_dotenv
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
+from src.config.database import db_handler
+from src.config.settings import get_settings
+from src.main import main_app
+from src.models.base import Base
 from src.models.user import Permission, Role, User
 from src.utils.security import TokenHandler
-
-import os
-from dotenv import load_dotenv
-from src.config.settings import get_settings
 
 load_dotenv(dotenv_path=get_settings().BASE_DIR / ".env.test")
 
 # ФИКСТУРЫ ДЛЯ СОЗДАНИЯ ПОДКЛЮЧЕНИЙ
 TEST_DATABASE_URL = f"postgresql+asyncpg://{os.getenv("DB_USERNAME")}:{os.getenv("DB_PASSWORD")}@{os.getenv("DB_HOST")}:{os.getenv("DB_PORT")}/{os.getenv("DB_NAME")}"
-
 
 engine_test = create_async_engine(
     TEST_DATABASE_URL,
@@ -58,16 +53,13 @@ async def prepare_database():
 async def ac() -> AsyncGenerator[AsyncClient, None]:
     # 1. Сначала применяем оверрайд сессии
     # Это гарантирует, что ПЕРЕД созданием клиента приложение уже знает про тестовую БД
-    from src.main import main_app
     from src.config.database import db_handler
+    from src.main import main_app
 
     main_app.dependency_overrides[db_handler.session_getter] = override_get_async_session
 
     # 2. Теперь создаем клиент
-    async with AsyncClient(
-        transport=ASGITransport(app=main_app),
-        base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=main_app), base_url="http://test") as ac:
         yield ac
 
 
@@ -83,8 +75,6 @@ async def clean_tables():
 
 
 # ФИКСТУРЫ ДАННЫХ
-
-
 # Сборка дерева прав пользователя
 @pytest.fixture
 async def create_permission(session: AsyncSession):
@@ -148,10 +138,7 @@ def clean_auth_overrides():
 
     yield
     # Получаем список всех ключей, кроме нашего session_getter
-    to_delete = [
-        k for k in main_app.dependency_overrides.keys()
-        if k != db_handler.session_getter
-    ]
+    to_delete = [k for k in main_app.dependency_overrides.keys() if k != db_handler.session_getter]
     for k in to_delete:
         del main_app.dependency_overrides[k]
 
@@ -160,10 +147,5 @@ def get_mock_user():
     """Вспомогательный мок-объект"""
 
     return User(
-        id=1,
-        full_name="Mock Admin",
-        email="admin@test.com",
-        phone="+71111111111",
-        is_active=True,
-        is_superuser=True
+        id=1, full_name="Mock Admin", email="admin@test.com", phone="+71111111111", is_active=True, is_superuser=True
     )

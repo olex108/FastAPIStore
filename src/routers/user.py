@@ -1,19 +1,18 @@
 # routers/user.py
-from typing import List, Annotated, Optional
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.config.database import db_handler
 
-from src.models.user import User
-from src.crud.user import create_new_user, get_all_users, get_user_by_id, get_users_paginated
+from src.config.database import db_handler
+from src.config.settings import get_settings
 from src.crud.cart import create_cart
-from src.schemas.user import UserInfo, UserRegister, UserUpdate, UsersPaginatedOut
+from src.crud.user import add_role_to_user, create_new_user, get_user_by_id, get_users_paginated
 from src.dependencies.auth import AuthUserDependencies
 from src.dependencies.permissions import PermissionChecker
-from sqlalchemy.exc import IntegrityError
+from src.models.user import User
+from src.schemas.user import UserInfo, UserRegister, UsersPaginatedOut
 from src.utils.security import PasswordHandler
-from src.config.settings import get_settings
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -36,7 +35,11 @@ async def register_user(
     user_data["is_active"] = True
 
     new_user = await create_new_user(user=user_data, session=session)
-    user_cart = await create_cart(new_user, session=session)
+    await create_cart(new_user, session=session)
+    try:
+        await add_role_to_user(user=new_user, role="Customer", session=session)
+    except Exception:
+        pass
 
     return new_user
 
@@ -58,12 +61,11 @@ async def get_users(
     """
 
     # Преобразовываем и проверяем курсор курсором
-    print("START---------")
     if cursor:
         try:
             name, last_id = cursor.rsplit("::", 1)
             cursor_data = (name, int(last_id))
-        except IndexError:
+        except (ValueError, IndexError):
             raise HTTPException(status_code=400, detail="Incorrect cursor format")
     else:
         cursor_data = None
@@ -85,24 +87,28 @@ async def get_users(
 
 @router.get("/me", response_model=UserInfo)
 async def get_current_user_info(
-        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_user)],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+    current_user: Annotated[User, Depends(AuthUserDependencies.get_current_user)],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для просмотра информации о текущем пользователе
+
+    Доступен для пользователей с разрешением "users:view"
     """
 
     return current_user
 
 
 @router.get("/{user_id}", response_model=UserInfo)
-async def get_current_user_info(
-        user_id: int,
-        current_user: Annotated[User, Depends(PermissionChecker(["users:view"]))],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+async def get_user_info(
+    user_id: int,
+    current_user: Annotated[User, Depends(PermissionChecker(["users:view"]))],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
-    Эндпоинт для просмотра информации о текущем пользователе
+    Эндпоинт для просмотра информации о пользователе
+
+    Доступен для пользователей с разрешением "users:view"
     """
     user = await get_user_by_id(session=session, user_id=user_id)
 

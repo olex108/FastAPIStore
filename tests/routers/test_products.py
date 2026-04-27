@@ -1,8 +1,9 @@
 import pytest
 from httpx import AsyncClient
-from src.main import main_app
+
 from src.dependencies.auth import AuthUserDependencies
 from src.dependencies.permissions import PermissionChecker
+from src.main import main_app
 from src.models.product import Product
 from tests.conftest import async_session_maker, get_mock_user
 
@@ -15,12 +16,7 @@ async def test_create_product(ac: AsyncClient):
     main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_active_user] = lambda: mock_user
 
-    product_data = {
-        "name": "Smartphone",
-        "quantity": 10000,
-        "price": 1000,
-        "is_active": True
-    }
+    product_data = {"name": "Smartphone", "quantity": 10000, "price": 1000, "is_active": True}
 
     response = await ac.post("/products/", json=product_data)
 
@@ -32,13 +28,14 @@ async def test_create_product(ac: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_products_list(ac: AsyncClient):
     mock_user = get_mock_user()
-    main_app.dependency_overrides[PermissionChecker(["products:create"])] = lambda: mock_user
+    main_app.dependency_overrides[PermissionChecker(["products:view"])] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_active_user] = lambda: mock_user
 
     response = await ac.get("/products/")
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
+    assert response.json()["next_cursor"] is None
+    assert isinstance(response.json()["items"], list)
 
 
 # 3. Тест получения по ID + 404 (GET)
@@ -46,19 +43,14 @@ async def test_get_products_list(ac: AsyncClient):
 async def test_get_product_by_id(ac: AsyncClient):
     # Создаем продукт
     async with async_session_maker() as session:
-        product = Product(
-            name="Item",
-            quantity=10000,
-            price=1000,
-            is_active=True
-        )
+        product = Product(name="Item", quantity=10000, price=1000, is_active=True)
         session.add(product)
         await session.commit()
         await session.refresh(product)
         p_id = product.id
 
     mock_user = get_mock_user()
-    main_app.dependency_overrides[PermissionChecker(["products:create"])] = lambda: mock_user
+    main_app.dependency_overrides[PermissionChecker(["products:view"])] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_active_user] = lambda: mock_user
 
@@ -77,28 +69,18 @@ async def test_get_product_by_id(ac: AsyncClient):
 @pytest.mark.asyncio
 async def test_update_product(ac: AsyncClient):
     async with async_session_maker() as session:
-        product = Product(
-            name="Old Item",
-            quantity=10000,
-            price=1000,
-            is_active=True
-        )
+        product = Product(name="Old Item", quantity=10000, price=1000, is_active=True)
         session.add(product)
         await session.commit()
         await session.refresh(product)
         p_id = product.id
 
     mock_user = get_mock_user()
-    main_app.dependency_overrides[PermissionChecker(["products:create"])] = lambda: mock_user
+    main_app.dependency_overrides[PermissionChecker(["products:update"])] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_active_user] = lambda: mock_user
 
-    update_data = {
-        "name": "New Item",
-        "quantity": 10000,
-        "price": 1000,
-        "is_active": True
-    }
+    update_data = {"name": "New Item", "quantity": 10000, "price": 1000, "is_active": True}
     response = await ac.put(f"/products/{p_id}", json=update_data)
 
     assert response.status_code == 200
@@ -114,19 +96,14 @@ async def test_update_product(ac: AsyncClient):
 @pytest.mark.asyncio
 async def test_delete_product(ac: AsyncClient):
     async with async_session_maker() as session:
-        product = Product(
-            name="Item",
-            quantity=10000,
-            price=1000,
-            is_active=True
-        )
+        product = Product(name="Item", quantity=10000, price=1000, is_active=True)
         session.add(product)
         await session.commit()
         await session.refresh(product)
         p_id = product.id
 
     mock_user = get_mock_user()
-    main_app.dependency_overrides[PermissionChecker(["products:create"])] = lambda: mock_user
+    main_app.dependency_overrides[PermissionChecker(["products:delete"])] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_active_user] = lambda: mock_user
 

@@ -19,8 +19,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True)
     phone: Mapped[str] = mapped_column(String(255), unique=True)
     hashed_password: Mapped[str] = mapped_column(String(1024), nullable=False)
-    is_superuser: Mapped[bool] = mapped_column(default=False, nullable=False, server_default='false')
-    is_active: Mapped[bool] = mapped_column(default=False, nullable=False, server_default='false')
+    is_superuser: Mapped[bool] = mapped_column(default=False, nullable=False, server_default="false")
+    is_active: Mapped[bool] = mapped_column(default=False, nullable=False, server_default="false")
 
     # Обратные связи
     cart: Mapped["Cart"] = relationship(back_populates="user", uselist=False)

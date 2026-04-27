@@ -7,10 +7,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config.database import db_handler
+
 from .config.logger import LOGGING_CONFIG
 from .config.settings import get_settings
 from .middlewares.access_logging import LogMiddleware
-from .routers import auth, product, user, cart
+from .routers import auth, cart, product, user
 
 settings = get_settings()
 
@@ -42,19 +43,17 @@ async def lifespan(app: FastAPI):
     await db_handler.dispose()
 
 
-main_app = FastAPI(
-    lifespan=lifespan
-)
+main_app = FastAPI(lifespan=lifespan)
 
 # Добавляем middleware
-# main_app.add_middleware(LogMiddleware)
-# main_app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+main_app.add_middleware(LogMiddleware)
+main_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # if settings.DEBUG and settings.DEBUG_TOOLBAR:
 #     main_app.add_middleware(
 #         DebugToolbarMiddleware,
@@ -76,10 +75,4 @@ def read_root():
 if __name__ == "__main__":
     settings = get_settings()
 
-    uvicorn.run(
-        "src.main:main_app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=True,
-        log_config=LOGGING_CONFIG
-    )
+    uvicorn.run("src.main:main_app", host=settings.HOST, port=settings.PORT, reload=True, log_config=LOGGING_CONFIG)

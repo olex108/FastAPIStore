@@ -1,22 +1,18 @@
 # routers/auth.py
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.utils.security import PasswordHandler, TokenHandler
 from src.config.database import db_handler
 from src.config.settings import get_settings
-
 from src.crud.auth import create_refresh_session, get_refresh_session_by_token
-from src.crud.user import get_user_by_id, get_user_by_email_or_phone
+from src.crud.user import get_user_by_email_or_phone, get_user_by_id
 from src.schemas.auth import Token
 from src.schemas.user import UserLogin
+from src.utils.security import PasswordHandler, TokenHandler
 
-router = APIRouter(
-    prefix="/auth",
-    tags=["Auth"]
-)
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 settings = get_settings()
 
@@ -42,7 +38,7 @@ async def login(
 
     try:
         # Получаем пользователя из базы данных
-        user_obj= await get_user_by_email_or_phone(session=session, user=user.user)
+        user_obj = await get_user_by_email_or_phone(session=session, user=user.user)
 
         if not user_obj:
             PasswordHandler.dammy_verify(user.password)
@@ -58,7 +54,7 @@ async def login(
 
         return Token(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
-    except Exception as error:
+    except Exception:
         raise exception_false_auth
 
 

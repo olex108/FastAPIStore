@@ -1,16 +1,9 @@
 # schemas/user.py
 import logging
 import re
-from typing import Self
+from typing import List, Optional, Self
 
-from pydantic import (
-    BaseModel,
-    EmailStr,
-    field_validator,
-    model_validator,
-    ConfigDict
-)
-from typing import Optional, List
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
 debug_logger = logging.getLogger("debug")
 

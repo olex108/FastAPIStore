@@ -1,39 +1,32 @@
 # routers/cart.py
-from fastapi import APIRouter
 from typing import Annotated, List
-from fastapi import Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.models.user import User
-from src.models.cart import CartStatus
-from src.crud.cart import (
-    get_user_cart,
-    add_product_to_cart,
-    add_products_list_to_cart,
-    delete_product_from_cart,
-    clear_cart_products
-)
-from src.dependencies.permissions import OwnerOrPermissionChecker
 from src.config.database import db_handler
-
-from src.schemas.cart import CartOut, ProductAdd
+from src.crud.cart import (add_product_to_cart, add_products_list_to_cart, clear_cart_products,
+                           delete_product_from_cart, get_user_cart)
 from src.dependencies.auth import AuthUserDependencies
+from src.dependencies.permissions import OwnerOrPermissionChecker
+from src.models.cart import CartStatus
+from src.models.user import User
+from src.schemas.cart import CartOut, ProductAdd
 
-router = APIRouter(
-    prefix="/cart",
-    tags=["Carts"]
-)
+router = APIRouter(prefix="/cart", tags=["Carts"])
 
 exception_400_add_prod = HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request of added product")
 exception_400_del_prod = HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request of delete product")
 exception_500_get_cart = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can`t get cart data")
-exception_400_cart_in_order = HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cart in order. Create new cart")
+exception_400_cart_in_order = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST, detail="Cart in order. Create new cart"
+)
 
 
 @router.get("/me", response_model=CartOut)
 async def get_current_user_cart(
-        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для получения Корзины текущего пользователя
@@ -48,9 +41,18 @@ async def get_current_user_cart(
 
 @router.get("/{user_id}", response_model=CartOut)
 async def get_cart(
-        user_id: int,
-        current_user: Annotated[User, Depends(OwnerOrPermissionChecker(["carts:view",]))],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    user_id: int,
+    current_user: Annotated[
+        User,
+        Depends(
+            OwnerOrPermissionChecker(
+                [
+                    "carts:view",
+                ]
+            )
+        ),
+    ],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для получения Корзины пользователя по user_id
@@ -66,9 +68,9 @@ async def get_cart(
 
 @router.post("/me/add_product", response_model=CartOut)
 async def add_product(
-        product: ProductAdd,
-        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    product: ProductAdd,
+    current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для добавления продукта в корзину текущего пользователя
@@ -81,7 +83,7 @@ async def add_product(
         raise exception_400_cart_in_order
 
     try:
-        await add_product_to_cart(cart_id=current_user.cart.id, product=product,  session=session)
+        await add_product_to_cart(cart_id=current_user.cart.id, product=product, session=session)
     except Exception:
         raise exception_400_add_prod
 
@@ -95,10 +97,19 @@ async def add_product(
 
 @router.post("/{user_id}/add_product", response_model=CartOut)
 async def add_user_product(
-        user_id: int,
-        product: ProductAdd,
-        current_user: Annotated[User, Depends(OwnerOrPermissionChecker(["carts:update",]))],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    user_id: int,
+    product: ProductAdd,
+    current_user: Annotated[
+        User,
+        Depends(
+            OwnerOrPermissionChecker(
+                [
+                    "carts:update",
+                ]
+            )
+        ),
+    ],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для добавления продукта в корзину пользователя по user_id
@@ -131,9 +142,9 @@ async def add_user_product(
 
 @router.post("/me/add_products", response_model=CartOut)
 async def add_products_list(
-        products_list: List[ProductAdd],
-        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    products_list: List[ProductAdd],
+    current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для добавления списка товаров в корзину
@@ -160,9 +171,9 @@ async def add_products_list(
 
 @router.delete("/me/{product_id}", response_model=CartOut)
 async def delete_my_product(
-        product_id: int,
-        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    product_id: int,
+    current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для удаления продукта из корзины текущего пользователя
@@ -173,11 +184,7 @@ async def delete_my_product(
         raise exception_400_cart_in_order
 
     try:
-        await delete_product_from_cart(
-            product_id=product_id,
-            cart_id=current_user.cart.id,
-            session=session
-        )
+        await delete_product_from_cart(product_id=product_id, cart_id=current_user.cart.id, session=session)
     except Exception:
         raise exception_400_del_prod
 
@@ -191,10 +198,19 @@ async def delete_my_product(
 
 @router.delete("/{user_id}/{product_id}", response_model=CartOut)
 async def delete_user_product(
-        user_id: int,
-        product_id: int,
-        current_user: Annotated[User, Depends(OwnerOrPermissionChecker(["carts:update",]))],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    user_id: int,
+    product_id: int,
+    current_user: Annotated[
+        User,
+        Depends(
+            OwnerOrPermissionChecker(
+                [
+                    "carts:update",
+                ]
+            )
+        ),
+    ],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для удаления продукта в из корзины пользователя user_id
@@ -210,11 +226,7 @@ async def delete_user_product(
         raise exception_400_add_prod
 
     try:
-        await delete_product_from_cart(
-            product_id=product_id,
-            cart_id=user_cart.id,
-            session=session
-        )
+        await delete_product_from_cart(product_id=product_id, cart_id=user_cart.id, session=session)
     except Exception:
         raise exception_400_del_prod
 
@@ -228,8 +240,8 @@ async def delete_user_product(
 
 @router.delete("/me/clear", response_model=CartOut)
 async def clear_cart(
-        current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     """
     Эндпоинт для очистки корзины пользователя
@@ -240,10 +252,7 @@ async def clear_cart(
         raise exception_400_cart_in_order
 
     try:
-        await clear_cart_products(
-            cart_id=current_user.cart.id,
-            session=session
-        )
+        await clear_cart_products(cart_id=current_user.cart.id, session=session)
     except Exception:
         raise exception_400_del_prod
     try:

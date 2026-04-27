@@ -1,9 +1,10 @@
 import asyncio
-from sqlalchemy import select, delete
-from sqlalchemy.orm import selectinload
+
+from sqlalchemy import delete, select
+
 from src.config.database import db_handler
 from src.config.settings import get_settings
-from src.models import Role, Permission, RolePermissions
+from src.models import Permission, Role, RolePermissions
 
 settings = get_settings()
 
@@ -20,11 +21,9 @@ TARGET_PERMISSIONS = [
     "products:create",
     "products:update",
     "products:delete",
-
     "users:view",
     "users:update",
     "users:delete",
-
     "carts:view",
     "carts:update",
     "carts:delete",
@@ -43,28 +42,25 @@ TARGET_PERMISSIONS_ROLES = {
         "products:create",
         "products:update",
         "products:delete",
-
         "users:view",
         "users:update",
         "users:delete",
-
         "carts:view",
         "carts:update",
         "carts:delete",
     ],
     "Manager": [
         "products:view",
-
         "users:view",
-
         "carts:view",
         "carts:update",
         "carts:delete",
     ],
     "Customer": [
         "products:view",
-    ]
+    ],
 }
+
 
 async def default_settings():
     # Получаем сессию один раз для всех действий
@@ -121,7 +117,6 @@ async def default_settings():
                         session.add(RolePermissions(role_id=role_id, permission_id=perm_id))
 
             print("Связи ролей и разрешений обновлены")
-
 
             # Фиксируем всё одним коммитом
             await session.commit()

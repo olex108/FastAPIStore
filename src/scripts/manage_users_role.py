@@ -1,11 +1,13 @@
 # scripts/manage_users_role.py
 
 import asyncio
-from sqlalchemy import select, delete
+
+from sqlalchemy import delete, select
 from sqlalchemy.orm import selectinload
+
 from src.config.database import db_handler
-from src.models import Role, User, RoleUsers
 from src.config.settings import get_settings
+from src.models import Role, RoleUsers, User
 
 settings = get_settings()
 
@@ -44,16 +46,13 @@ async def interactive_user_roles():
             print(" 0 - Выход")
 
             choice = input("\nВыберите ID роли для просмотра списка: ")
-            if choice == "0": return
+            if choice == "0":
+                return
 
             try:
                 role_id = int(choice)
                 # Загружаем роль вместе с пользователями
-                stmt = (
-                    select(Role)
-                    .where(Role.id == role_id)
-                    .options(selectinload(Role.users))
-                )
+                stmt = select(Role).where(Role.id == role_id).options(selectinload(Role.users))
                 role = (await session.execute(stmt)).scalar_one_or_none()
 
                 if not role:
@@ -73,21 +72,18 @@ async def interactive_user_roles():
 
                     action = input("\nВыберите действие (+ добавить юзера, - убрать юзера, b назад): ").lower()
 
-                    if action == 'b':
+                    if action == "b":
                         break
 
-                    elif action == '-':
+                    elif action == "-":
                         u_id = int(input("Введите ID пользователя для удаления из роли: "))
-                        stmt_del = delete(RoleUsers).where(
-                            RoleUsers.role_id == role.id,
-                            RoleUsers.user_id == u_id
-                        )
+                        stmt_del = delete(RoleUsers).where(RoleUsers.role_id == role.id, RoleUsers.user_id == u_id)
                         await session.execute(stmt_del)
                         await session.commit()
                         await session.refresh(role)
                         print("✅ Пользователь удален из роли!")
 
-                    elif action == '+':
+                    elif action == "+":
                         identity = input("Введите ID или Email пользователя: ")
                         user = await get_user_by_identity(session, identity)
 

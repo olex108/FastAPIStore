@@ -1,12 +1,12 @@
 import logging
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 
-from sqlalchemy import select, or_, and_, asc, desc, tuple_
+from sqlalchemy import and_, asc, desc, or_, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config.pagination import SortOptions
 from src.models.product import Product
 from src.schemas.product import CreateProduct
-from src.config.pagination import SortOptions
 
 debug_logger = logging.getLogger("debug")
 
@@ -35,7 +35,7 @@ async def get_products_paginated(
     limit: int,
     sort_by: SortOptions,
     name_query: Optional[str] = None,
-    cursor_data: Optional[tuple] = None, # (last_val, last_id)
+    cursor_data: Optional[tuple] = None,  # (last_val, last_id)
 ) -> Sequence[Product]:
     """
     Запрос на получение отфильтрованного и отсортированного списка товаров
@@ -56,10 +56,7 @@ async def get_products_paginated(
             query = query.where(tuple_(Product.price, Product.id) > (int(last_val), last_id))
         elif sort_by == SortOptions.price_desc:
             query = query.where(
-                or_(
-                    Product.price < int(last_val),
-                    and_(Product.price == int(last_val), Product.id > last_id)
-                )
+                or_(Product.price < int(last_val), and_(Product.price == int(last_val), Product.id > last_id))
             )
 
     # Применяем сортировку
