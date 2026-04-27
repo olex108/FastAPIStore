@@ -23,7 +23,7 @@ TARGET_PRODUCTS = [
         "price": i*100,
         "quantity": i*10,
         "is_active": True
-    } for i in range(1, 200)
+    } for i in range(200, 400)
 ]
 
 
@@ -50,7 +50,7 @@ async def default_settings():
             await session.execute(upsert_stmt)
             await session.commit()
 
-            print(f"✅ Успешно синхронизировано {len(TARGET_PRODUCTS)} записей!")
+            print(f"✅ Успешно добавлено {len(TARGET_PRODUCTS)} записей!")
             return
 
         except Exception as e:

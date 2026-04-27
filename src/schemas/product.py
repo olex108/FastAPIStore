@@ -32,4 +32,4 @@ class ProductOut(BaseModel):
 
 class ProductPaginationOut(BaseModel):
     items: List[ProductOut]
-    next_cursor: Optional[str]
+    next_cursor: Optional[str] | None
