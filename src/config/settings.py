@@ -1,18 +1,42 @@
 # config/settings.py
 from functools import lru_cache
 from pathlib import Path
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
 from src.config.pagination import PaginationSettings
 
+BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
-class Settings(BaseSettings):
+
+class BaseAppParams(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+
+class RedisSettings(BaseAppParams):
+
+    REDIS_HOST: str = "127.0.0.1"
+    REDIS_PORT: int = 6379
+
+    @property
+    def REDIS_URL(self) -> str:
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
+
+
+class SMTPSettings(BaseAppParams):
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USER: str
+    SMTP_PASS: str
+
+
+class Settings(BaseAppParams):
     app_name: str = "fastapistore"
     admin_email: str = "admin@example.com"
     items_per_user: int = 50
-
-    BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
     # Project
     SECRET_KEY: str
@@ -37,14 +61,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10
     REFRESH_TOKEN_EXPIRE_DAYS: int = 1
 
-    model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env",
-        env_file_encoding="utf-8",
-        extra="ignore",  # игнорировать лишние переменные в .env
-        case_sensitive=False,
-        env_nested_delimiter="",
-    )
-
     @property
     def DATABASE_SYNC_URL(self):
         return f"postgresql://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
@@ -55,6 +71,9 @@ class Settings(BaseSettings):
             f"postgresql+asyncpg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
+    # Imported settings
+    REDIS_SETTINGS: RedisSettings = RedisSettings()
+    SMTP: SMTPSettings = SMTPSettings()
     pagination: PaginationSettings = PaginationSettings()
 
 
