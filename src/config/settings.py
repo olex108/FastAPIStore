@@ -1,13 +1,15 @@
 # config/settings.py
 from functools import lru_cache
 from pathlib import Path
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from src.config.pagination import PaginationSettings
 
-BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from src.config.pagination import PaginationSettings
 
 
 class BaseAppParams(BaseSettings):
+    BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
         env_file_encoding="utf-8",
