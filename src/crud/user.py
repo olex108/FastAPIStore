@@ -1,8 +1,8 @@
 import logging
-from typing import Sequence
+from typing import Sequence, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, tuple_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,16 +50,35 @@ async def get_all_users(session: AsyncSession) -> Sequence[User]:
     return result.all()
 
 
-# async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
-#     query = select(User).where(User.email == email)
-#     result = (await session.execute(query)).scalar_one_or_none()
-#     return result
-#
-#
-# async def get_user_by_phone(session: AsyncSession, phone: str) -> User | None:
-#     query = select(User).where(User.phone == phone)
-#     result = (await session.execute(query)).scalar_one_or_none()
-#     return result
+async def get_users_paginated(
+        session: AsyncSession,
+        limit: int,
+        name_query: Optional[str] = None,
+        cursor_data: Optional[tuple] = None, # (last_name, last_id)
+) -> Sequence[User]:
+    """
+    Запрос на получение отфильтрованного и отсортированного списка пользователей
+    """
+
+    query = select(User)
+
+    # Применяем фильтрацию по имени
+    if name_query:
+        query = query.where(User.full_name.ilike(f"%{name_query}%"))
+
+    # Применяем фильтрацию курсором
+    if cursor_data:
+        last_name, last_id = cursor_data
+        query = query.where(
+            tuple_(User.full_name, User.id) > (last_name, last_id)
+        )
+
+    # Применяем сортировку и лимит
+    query = query.order_by(User.full_name).limit(limit)
+
+    result = await session.execute(query)
+
+    return result.scalars().all()
 
 
 async def get_user_by_email_or_phone(session: AsyncSession, user: str) -> User | None:
@@ -98,3 +117,15 @@ async def get_user_by_id(session: AsyncSession, user_id: int) -> User | None:
     query = select(User).where(User.id == user_id)
     result = (await session.execute(query)).scalar_one_or_none()
     return result
+
+
+# async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
+#     query = select(User).where(User.email == email)
+#     result = (await session.execute(query)).scalar_one_or_none()
+#     return result
+#
+#
+# async def get_user_by_phone(session: AsyncSession, phone: str) -> User | None:
+#     query = select(User).where(User.phone == phone)
+#     result = (await session.execute(query)).scalar_one_or_none()
+#     return result

@@ -10,6 +10,7 @@ from pydantic import (
     model_validator,
     ConfigDict
 )
+from typing import Optional, List
 
 debug_logger = logging.getLogger("debug")
 
@@ -103,3 +104,8 @@ class UserUpdate(BaseModel):
     phone: str
     is_active: bool
     is_superuser: bool
+
+
+class UsersPaginatedOut(BaseModel):
+    items: List[UserInfo]
+    next_cursor: Optional[str] | None

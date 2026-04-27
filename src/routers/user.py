@@ -1,18 +1,19 @@
 # routers/user.py
-from typing import List, Annotated
+from typing import List, Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.config.database import db_handler
 
 from src.models.user import User
-from src.crud.user import create_new_user, get_all_users, get_user_by_id
+from src.crud.user import create_new_user, get_all_users, get_user_by_id, get_users_paginated
 from src.crud.cart import create_cart
-from src.schemas.user import UserInfo, UserRegister, UserUpdate
+from src.schemas.user import UserInfo, UserRegister, UserUpdate, UsersPaginatedOut
 from src.dependencies.auth import AuthUserDependencies
 from src.dependencies.permissions import PermissionChecker
 from sqlalchemy.exc import IntegrityError
 from src.utils.security import PasswordHandler
+from src.config.settings import get_settings
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -40,18 +41,46 @@ async def register_user(
     return new_user
 
 
-@router.get("/", response_model=List[UserInfo])
+@router.get("/", response_model=UsersPaginatedOut)
 async def get_users(
     # current_user: Annotated[User, Depends(PermissionChecker(["users:view"]))],
-    session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    limit: int = Query(**get_settings().pagination.model_dump()),
+    name_query: Optional[str] = None,
+    cursor: Optional[str] = Query(None, description="Format: name::id"),
 ):
     """
-    Эндпоинт для просмотра списка пользователей
+    Эндпоинт для получения отсортированного списка пользователей.
+    Включает пагинацию (с возможностью задания лимита на стороне пользователя),
+    возможность сортировки по полю full_name
+
     Доступен для пользователей с разрешением "users:view"
     """
 
-    users = await get_all_users(session=session)
-    return users
+    # Преобразовываем и проверяем курсор курсором
+    print("START---------")
+    if cursor:
+        try:
+            name, last_id = cursor.rsplit("::", 1)
+            cursor_data = (name, int(last_id))
+        except IndexError:
+            raise HTTPException(status_code=400, detail="Incorrect cursor format")
+    else:
+        cursor_data = None
+
+    users_list = await get_users_paginated(
+        session=session, limit=limit, name_query=name_query, cursor_data=cursor_data
+    )
+
+    # Собираем следующий курсор
+    if len(users_list) == limit:
+        last = users_list[-1]
+        val = last.full_name
+        next_cursor = f"{val}::{last.id}"
+    else:
+        next_cursor = None
+
+    return UsersPaginatedOut(items=users_list, next_cursor=next_cursor)
 
 
 @router.get("/me", response_model=UserInfo)
