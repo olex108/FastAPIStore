@@ -24,7 +24,9 @@ dependencies = [
     "redis (>=7.4.0,<8.0.0)",
     "taskiq (>=0.12.2,<0.13.0)",
     "taskiq-redis (>=1.2.2,<2.0.0)",
-    "taskiq-fastapi (>=0.5.0,<0.6.0)"
+    "taskiq-fastapi (>=0.5.0,<0.6.0)",
+    "aiosmtplib (>=5.1.0,<6.0.0)",
+    "xlsxwriter (>=3.2.9,<4.0.0)"
 ]
 
 
