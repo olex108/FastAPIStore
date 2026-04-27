@@ -1,51 +1,65 @@
 # routers/product.py
-from typing import List, Annotated, Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config.pagination import SortOptions
 from src.dependencies.permissions import PermissionChecker
 from src.config.database import db_handler
 from src.crud.product import (
     create_product,
     delete_product_by_id,
-    get_all_products,
     get_product_by_id,
     update_product_by_id,
+    get_products_paginated
 )
 from src.schemas.product import CreateProduct, ProductOut, ProductPaginationOut
 from src.config.settings import get_settings
-from sqlalchemy import select
-from src.models.product import Product
-
-
-
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.get("/", name="products", response_model=List[ProductOut])
+@router.get("/", name="products", response_model=ProductPaginationOut)
 async def get_products_paginated_list(
-    limit: Annotated[int, Query(**get_settings().pagination.model_dump())],
-    cursor: Annotated[Optional[str], Query(None, description="price_id")],
-    # sort_by: Annotated[str, Query("price_asc", regex="^(price_asc|price_desc|name_asc)$")],
-    # name_query: Annotated[Optional[str], None],
     # current_user: Annotated[str, Depends(PermissionChecker(["products:view"]))],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    limit: int = Query(**get_settings().pagination.model_dump()),
+    sort_by: SortOptions = SortOptions.name_asc,
+    name_query: Optional[str] = None,
+    cursor: Optional[str] = Query(None, description="Format: price::id or name::id"),
 ):
+    """
+    Эндпоинт для получения списка продуктов.
+    Включает пагинацию (с возможностью задания лимита на стороне пользователя),
+    возможность сортировки по полям name и price и фильтрации по полю name.
 
-    query = select(Product).order_by(Product.id).limit(limit)
+    Настроить базовую пагинацию можно в `config.settings.py`
+    """
 
-    if cursor is not None:
-        prod_price, prod_id = cursor.split("_")
-        query.where(Product.id>prod_id)
+    # Преобразовываем и проверяем курсор курсором
+    if cursor:
+        try:
+            val, last_id = cursor.rsplit("::", 1)
+            cursor_data = (val, int(last_id))
+        except (ValueError, IndexError):
+            raise HTTPException(status_code=400, detail="Incorrect cursor format")
+    else:
+        cursor_data = None
 
-    prod_list = await session.execute(query)
-    prod_list = prod_list.scalars().all()
+    products_list = await get_products_paginated(
+        session=session, limit=limit, sort_by=sort_by, name_query=name_query, cursor_data=cursor_data
+    )
 
+    # Собираем следующий курсор
+    if len(products_list) == limit:
+        last = products_list[-1]
+        val = last.name if sort_by == SortOptions.name_asc else last.price
+        next_cursor = f"{val}::{last.id}"
+    else:
+        next_cursor = None
 
-    product_list = await get_all_products(session=session)
-    return product_list
+    return ProductPaginationOut(items=products_list, next_cursor=next_cursor)
 
 
 # @router.get("/", name="products", response_model=List[ProductOut])

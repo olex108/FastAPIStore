@@ -1,16 +1,10 @@
 # config/settings.py
-import logging
-from pydantic import BaseModel
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
-class PaginationSettings(BaseModel):
-    default: int = 10
-    gt: int = 0
-    le: int = 50
+from src.config.pagination import PaginationSettings
 
 
 class Settings(BaseSettings):
@@ -24,7 +18,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     DEBUG: bool
     HOST: str = "127.0.0.1"
-    PORT: int = 8000
+    PORT: int = 8888
 
     # DEBUG_TOOLBAR: bool = True
 

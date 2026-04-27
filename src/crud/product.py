@@ -1,11 +1,12 @@
 import logging
-from typing import Sequence
+from typing import Sequence, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_, asc, desc, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.product import Product
 from src.schemas.product import CreateProduct
+from src.config.pagination import SortOptions
 
 debug_logger = logging.getLogger("debug")
 
@@ -26,6 +27,54 @@ async def create_product(new_product: CreateProduct, session: AsyncSession) -> P
 async def get_all_products(session: AsyncSession) -> Sequence[Product]:
     query = select(Product).order_by(Product.id)
     result = await session.execute(query)
+    return result.scalars().all()
+
+
+async def get_products_paginated(
+    session: AsyncSession,
+    limit: int,
+    sort_by: SortOptions,
+    name_query: Optional[str] = None,
+    cursor_data: Optional[tuple] = None, # (last_val, last_id)
+) -> Sequence[Product]:
+    """
+    Запрос на получение отфильтрованного и отсортированного списка товаров
+    """
+
+    query = select(Product)
+
+    # Применяем фильтрацию по имени
+    if name_query:
+        query = query.where(Product.name.ilike(f"%{name_query}%"))
+
+    # Применяем фильтрацию курсором
+    if cursor_data:
+        last_val, last_id = cursor_data
+        if sort_by == SortOptions.name_asc:
+            query = query.where(tuple_(Product.name, Product.id) > (last_val, last_id))
+        elif sort_by == SortOptions.price_asc:
+            query = query.where(tuple_(Product.price, Product.id) > (int(last_val), last_id))
+        elif sort_by == SortOptions.price_desc:
+            query = query.where(
+                or_(
+                    Product.price < int(last_val),
+                    and_(Product.price == int(last_val), Product.id > last_id)
+                )
+            )
+
+    # Применяем сортировку
+    if sort_by == SortOptions.name_asc:
+        query = query.order_by(Product.name.asc(), Product.id.asc())
+    elif sort_by == SortOptions.price_desc:
+        query = query.order_by(Product.price.desc(), Product.id.asc())
+    else:
+        query = query.order_by(Product.price.asc(), Product.id.asc())
+
+    # Применяем лимит
+    query = query.limit(limit)
+
+    result = await session.execute(query)
+
     return result.scalars().all()
 
 
