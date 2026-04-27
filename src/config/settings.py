@@ -1,11 +1,16 @@
 # config/settings.py
 import logging
+from pydantic import BaseModel
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-debug_logger = logging.getLogger("debug")
+
+class PaginationSettings(BaseModel):
+    default: int = 10
+    gt: int = 0
+    le: int = 50
 
 
 class Settings(BaseSettings):
@@ -56,9 +61,10 @@ class Settings(BaseSettings):
             f"postgresql+asyncpg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
+    pagination: PaginationSettings = PaginationSettings()
+
 
 # получение переменных из настроек с их сохранением в кеш
 @lru_cache()
 def get_settings():
-    debug_logger.debug("--- Create settings ---")
     return Settings()

@@ -42,7 +42,7 @@ async def register_user(
 
 @router.get("/", response_model=List[UserInfo])
 async def get_users(
-    current_user: Annotated[User, Depends(PermissionChecker(["users:view"]))],
+    # current_user: Annotated[User, Depends(PermissionChecker(["users:view"]))],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
 ):
     """
