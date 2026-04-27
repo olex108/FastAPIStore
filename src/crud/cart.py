@@ -1,16 +1,15 @@
 import logging
-from typing import Annotated, List
+from typing import List
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.models.user import User
 from src.models.cart import Cart, CartProducts, CartStatus
+from src.models.user import User
 from src.schemas.cart import ProductAdd
-
 
 debug_logger = logging.getLogger("debug")
 
@@ -27,15 +26,13 @@ async def create_cart(user: User, session: AsyncSession) -> None:
         debug_logger.error(f"--- Create cart failed: {e.args} ---")
         raise e
 
+
 async def get_user_cart(user_id: int, session: AsyncSession) -> Cart:
     try:
         query = (
-            select(Cart).where(
-                    Cart.user_id == user_id, Cart.status == CartStatus.CURRENT
-                )
-            .options(
-                selectinload(Cart.products).selectinload(CartProducts.product)
-            )
+            select(Cart)
+            .where(Cart.user_id == user_id, Cart.status == CartStatus.CURRENT)
+            .options(selectinload(Cart.products).selectinload(CartProducts.product))
         )
         result = (await session.execute(query)).scalar_one_or_none()
         return result
@@ -45,28 +42,18 @@ async def get_user_cart(user_id: int, session: AsyncSession) -> Cart:
         raise e
 
 
-# async def get_cart_id_by_user_id(user_id: id, session: AsyncSession) -> int | None:
-#     """
-#     Запрос на получение корзины по user_id
-#     Ищем именно активную корзину
-#     """
-#
-#     query = (
-#         select(Cart.id)
-#         .where(
-#             Cart.user_id == user_id,
-#             Cart.status == CartStatus.CURRENT
-#         )
-#     )
-#     cart_id = (await session.execute(query)).scalar_one_or_none()
-#     return cart_id
+async def get_cart_id_by_user_id(user_id: id, session: AsyncSession) -> int | None:
+    """
+    Запрос на получение корзины по user_id
+    Ищем именно активную корзину
+    """
+
+    query = select(Cart.id).where(Cart.user_id == user_id, Cart.status == CartStatus.CURRENT)
+    cart_id = (await session.execute(query)).scalar_one_or_none()
+    return cart_id
 
 
-async def add_product_to_cart(
-        cart_id: int,
-        product: ProductAdd,
-        session: AsyncSession
-) -> None:
+async def add_product_to_cart(cart_id: int, product: ProductAdd, session: AsyncSession) -> None:
     """
     Функция для добавления продукта в корзину.
     Принимает продукт
@@ -81,10 +68,7 @@ async def add_product_to_cart(
     query = insert(CartProducts).values(new_product)
 
     upsert_stmt = query.on_conflict_do_update(
-        index_elements=["cart_id", "product_id"],
-        set_={
-            "product_quantity": query.excluded.product_quantity
-        }
+        index_elements=["cart_id", "product_id"], set_={"product_quantity": query.excluded.product_quantity}
     )
 
     try:
@@ -97,11 +81,7 @@ async def add_product_to_cart(
         raise e
 
 
-async def add_products_list_to_cart(
-        cart_id: int,
-        products_list: List[ProductAdd],
-        session: AsyncSession
-) -> None:
+async def add_products_list_to_cart(cart_id: int, products_list: List[ProductAdd], session: AsyncSession) -> None:
     """
     Функция для добавления списка продуктов в корзину.
     Принимает список продуктов
@@ -121,7 +101,7 @@ async def add_products_list_to_cart(
 
     upsert_query = query.on_conflict_do_update(
         index_elements=["cart_id", "product_id"],
-        set_={"product_quantity": CartProducts.product_quantity + query.excluded.product_quantity}
+        set_={"product_quantity": CartProducts.product_quantity + query.excluded.product_quantity},
     )
 
     try:
@@ -135,12 +115,7 @@ async def add_products_list_to_cart(
 
 
 async def delete_product_from_cart(product_id: int, cart_id: int, session: AsyncSession) -> None:
-    query = (delete(CartProducts)
-        .where(
-            CartProducts.cart_id == cart_id,
-            CartProducts.product_id == product_id
-        )
-    )
+    query = delete(CartProducts).where(CartProducts.cart_id == cart_id, CartProducts.product_id == product_id)
 
     try:
         await session.execute(query)

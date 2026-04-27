@@ -1,7 +1,10 @@
 import pytest
 from fastapi import HTTPException
+
 from src.dependencies.permissions import PermissionChecker
-from src.models.user import User, Role, Permission
+from src.models.user import Permission, Role, User
+
+from src.dependencies.permissions import OwnerOrPermissionChecker
 
 
 @pytest.mark.asyncio
@@ -36,9 +39,6 @@ async def test_permission_checker_forbidden():
     with pytest.raises(HTTPException) as exc:
         await checker(current_user=user)
     assert exc.value.status_code == 403
-
-
-from src.dependencies.permissions import OwnerOrPermissionChecker
 
 
 @pytest.mark.asyncio

@@ -1,9 +1,8 @@
 from copy import copy
 
 import pytest
-from httpx import AsyncClient
-
 from fastapi import status
+from httpx import AsyncClient
 
 # Пример данных для регистрации пользователя
 user_register_data = {

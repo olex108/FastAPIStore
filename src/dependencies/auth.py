@@ -2,40 +2,40 @@
 from typing import Annotated
 
 import jwt
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Security
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config.settings import get_settings
 from src.config.database import db_handler
+from src.config.settings import get_settings
 from src.crud.user import get_user_perms
 from src.models.user import User
 
 settings = get_settings()
 security = HTTPBearer()
 
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
 
 class AuthUserDependencies:
 
     @staticmethod
     async def get_current_user(
-            # Теперь получаем объект credentials, в котором лежит токен
-            auth: Annotated[HTTPAuthorizationCredentials, Security(security)],
-            session: Annotated[AsyncSession, Depends(db_handler.session_getter)]
+        # Теперь получаем объект credentials, в котором лежит токен
+        auth: Annotated[HTTPAuthorizationCredentials, Security(security)],
+        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
     ) -> User:
         """
         Зависимость для получения пользователя
         """
 
         token = auth.credentials  # Извлекаем сам токен из объекта
-
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        print(token)
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])

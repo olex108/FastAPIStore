@@ -1,5 +1,6 @@
-from src.crud.user import get_all_users
-import pytest
+# import pytest
+
+# from src.crud.user import get_all_users
 
 #
 # async def register_user(ac):

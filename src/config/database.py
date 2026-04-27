@@ -82,7 +82,6 @@ class DatabaseAsyncHandler(DatabaseHandler):
             bind=self.engine, autocommit=False, autoflush=False, expire_on_commit=False
         )
 
-
     async def dispose(self) -> None:
         """Асинхронный метод для закрытия сессии"""
 

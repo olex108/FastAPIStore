@@ -1,16 +1,14 @@
 # models/cart.py
+import enum
+from datetime import datetime
 from typing import List
 
-from sqlalchemy import ForeignKey, null, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Enum as SQLEnum
-
-from datetime import datetime
+from sqlalchemy import ForeignKey, Index
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .product import Product
-
-import enum
 
 
 class CartStatus(str, enum.Enum):
@@ -36,7 +34,7 @@ class Cart(Base):
     status: Mapped[CartStatus] = mapped_column(
         SQLEnum(CartStatus, name="cartstatus"),  # Явно указываем имя типа для Postgres
         default=CartStatus.CURRENT,
-        nullable=False
+        nullable=False,
     )
     order_at: Mapped[datetime] = mapped_column(nullable=True, default=None)
     order_amount: Mapped[int] = mapped_column(nullable=True, default=None)
@@ -49,10 +47,7 @@ class Cart(Base):
 
     __table_args__ = (
         Index(
-            "idx_user_current_cart_unique",
-            user_id,
-            postgresql_where=(status == CartStatus.CURRENT.value),
-            unique=True
+            "idx_user_current_cart_unique", user_id, postgresql_where=(status == CartStatus.CURRENT.value), unique=True
         ),
     )
 
@@ -89,14 +84,7 @@ class CartProducts(Base):
         back_populates="carts",
     )
 
-    __table_args__ = (
-        Index(
-            "idx_cart_product_unique",
-            cart_id,
-            product_id,
-            unique=True
-        ),
-    )
+    __table_args__ = (Index("idx_cart_product_unique", cart_id, product_id, unique=True),)
 
 
 class CartHistory(Base):

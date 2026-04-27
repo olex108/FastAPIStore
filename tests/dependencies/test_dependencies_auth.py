@@ -1,16 +1,18 @@
 import pytest
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import User
-from src.utils.security import TokenHandler
 from tests.conftest import async_session_maker
+
+from fastapi import HTTPException
+
+from src.dependencies.auth import AuthUserDependencies
 
 
 @pytest.mark.asyncio
 async def test_get_current_user_logic(auth_headers):
-    from src.dependencies.auth import AuthUserDependencies
     from fastapi.security import HTTPAuthorizationCredentials
+
+    from src.dependencies.auth import AuthUserDependencies
 
     token_str = auth_headers["Authorization"].split(" ")[1]
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token_str)
@@ -21,12 +23,6 @@ async def test_get_current_user_logic(auth_headers):
 
         assert user.email == "test@example.com"
         assert user.is_active is True
-
-
-import pytest
-from fastapi import HTTPException
-from src.dependencies.auth import AuthUserDependencies
-from src.models.user import User
 
 
 @pytest.mark.asyncio

@@ -1,12 +1,12 @@
-import pytest
 from unittest.mock import patch
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
-# Импортируем модели и скрипт
-from src.models import Role, Permission, RolePermissions
-from src.scripts.manage_role_perms import interactive_shell
+import pytest
+from sqlalchemy import select
+
 from src.config.database import db_handler
+# Импортируем модели и скрипт
+from src.models import Permission, Role, RolePermissions
+from src.scripts.manage_role_perms import interactive_shell
 
 
 @pytest.fixture

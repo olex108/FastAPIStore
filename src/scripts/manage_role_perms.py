@@ -1,10 +1,12 @@
 # scripts/manage_role_perms.py
-from src.config.settings import get_settings
 import asyncio
-from sqlalchemy import select, delete
+
+from sqlalchemy import delete, select
 from sqlalchemy.orm import selectinload
+
 from src.config.database import db_handler
-from src.models import Role, Permission, RolePermissions
+from src.config.settings import get_settings
+from src.models import Permission, Role, RolePermissions
 
 settings = get_settings()
 
@@ -38,15 +40,12 @@ async def interactive_shell():
             print(" 0 - Выход")
 
             choice = input("\nВыберите ID роли: ")
-            if choice == "0": return
+            if choice == "0":
+                return
 
             try:
                 role_id = int(choice)
-                stmt = (
-                    select(Role)
-                    .where(Role.id == role_id)
-                    .options(selectinload(Role.permissions))
-                )
+                stmt = select(Role).where(Role.id == role_id).options(selectinload(Role.permissions))
                 role = (await session.execute(stmt)).scalar_one_or_none()
 
                 if not role:
@@ -66,22 +65,21 @@ async def interactive_shell():
 
                     action = input("\nВыберите действие (+ добавить, - удалить, b назад): ").lower()
 
-                    if action == 'b':
+                    if action == "b":
                         break
 
-                    elif action == '-':
+                    elif action == "-":
                         p_id = int(input("Введите ID разрешения для удаления: "))
                         # Используем RolePermissions вместо GroupPermissions
                         stmt_del = delete(RolePermissions).where(
-                            RolePermissions.role_id == role.id,
-                            RolePermissions.permission_id == p_id
+                            RolePermissions.role_id == role.id, RolePermissions.permission_id == p_id
                         )
                         await session.execute(stmt_del)
                         await session.commit()
                         await session.refresh(role)
                         print("✅ Удалено")
 
-                    elif action == '+':
+                    elif action == "+":
                         all_perms = await get_all_permissions(session)
                         print("\nДоступные разрешения:")
                         for ap in all_perms:

@@ -1,11 +1,10 @@
 from datetime import datetime
-from typing import Annotated, List
+from typing import List
 
 from sqlalchemy import func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
-
 
 # class Category(Base):
 #     pass

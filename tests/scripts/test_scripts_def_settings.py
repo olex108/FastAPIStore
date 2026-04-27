@@ -1,8 +1,9 @@
 import pytest
 from sqlalchemy import select
-from src.models import Role, Permission, RolePermissions
-from src.scripts.default_roles_permissions_settings import default_settings, TARGET_PERMISSIONS_ROLES
+
 from src.config.database import db_handler
+from src.models import Permission, Role, RolePermissions
+from src.scripts.default_roles_permissions_settings import TARGET_PERMISSIONS_ROLES, default_settings
 
 
 @pytest.fixture

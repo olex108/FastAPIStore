@@ -4,18 +4,13 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config.pagination import SortOptions
-from src.dependencies.permissions import PermissionChecker
 from src.config.database import db_handler
-from src.crud.product import (
-    create_product,
-    delete_product_by_id,
-    get_product_by_id,
-    update_product_by_id,
-    get_products_paginated
-)
-from src.schemas.product import CreateProduct, ProductOut, ProductPaginationOut
+from src.config.pagination import SortOptions
 from src.config.settings import get_settings
+from src.crud.product import (create_product, delete_product_by_id, get_product_by_id, get_products_paginated,
+                              update_product_by_id)
+from src.dependencies.permissions import PermissionChecker
+from src.schemas.product import CreateProduct, ProductOut, ProductPaginationOut
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -87,9 +82,9 @@ async def get_product(
 
 @router.post("/", response_model=ProductOut)
 async def create_new_product(
-        product: CreateProduct,
-        current_user: Annotated[str, Depends(PermissionChecker(["products:create"]))],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    product: CreateProduct,
+    current_user: Annotated[str, Depends(PermissionChecker(["products:create"]))],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
     new_product = await create_product(new_product=product, session=session)
     return new_product
@@ -111,9 +106,9 @@ async def update_product(
 
 @router.delete("/{product_id}")
 async def delete_product(
-        product_id: int,
-        current_user: Annotated[str, Depends(PermissionChecker(["products:delete"]))],
-        session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+    product_id: int,
+    current_user: Annotated[str, Depends(PermissionChecker(["products:delete"]))],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
 
     product = await delete_product_by_id(product_id=product_id, session=session)
