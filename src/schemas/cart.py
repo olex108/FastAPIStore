@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
@@ -10,6 +11,7 @@ class ProductInfo(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     name: str
     price: float
     quantity: int
@@ -67,9 +69,11 @@ class CartOut(BaseModel):
     Содержит вложенный список из схемы CartProductsOut и вложенной схемы ProductInfo
     """
 
+    model_config = ConfigDict(from_attributes=True)
     id: int
     user_id: int
     status: CartStatus
+    order_at: datetime | None = None
 
     products: List[CartProductsOut]
 

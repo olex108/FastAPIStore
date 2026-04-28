@@ -11,7 +11,6 @@ from src.models.user import Role, RoleUsers, User
 
 debug_logger = logging.getLogger("debug")
 
-
 exception_user_exist = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST, detail="User with this email or phone already exists"
 )
@@ -42,17 +41,21 @@ async def create_new_user(user: dict, session: AsyncSession) -> User:
     return new_user
 
 
-async def add_role_to_user(user: User, role: str, session: AsyncSession) -> None:
-    customer_role = select(Role).where(Role.name == role)
-    customer_role = (await session.execute(customer_role)).scalar_one_or_none()
-    if customer_role:
-        new_role_user = RoleUsers(role_id=role, user_id=user.id)
-        session.add(new_role_user)
-        try:
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            debug_logger.error(f"--- Add user to role: {role} failed: {e.args} ---")
+async def get_role_by_name(name: str, session: AsyncSession) -> Role | None:
+    query = select(Role).where(Role.name == name)
+    result = (await session.execute(query)).scalar_one_or_none()
+    return result
+
+
+async def add_role_to_user(user: User, role: Role, session: AsyncSession) -> None:
+    new_role_user = RoleUsers(role_id=role.id, user_id=user.id)
+    session.add(new_role_user)
+    try:
+        await session.commit()
+        debug_logger.info(f"Added new role to user {new_role_user}")
+    except Exception as e:
+        await session.rollback()
+        debug_logger.error(f"--- Add user to role: {role} failed: {e.args} ---")
 
 
 async def get_all_users(session: AsyncSession) -> Sequence[User]:

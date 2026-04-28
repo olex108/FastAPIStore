@@ -28,6 +28,7 @@ class User(Base):
         back_populates="users",
         secondary="role_users",
     )
+    orders: Mapped[List["Order"]] = relationship(back_populates="user")
 
     def __str__(self):
         return f"{self.id} - {self.full_name} - {self.is_superuser} - {self.is_active}"

@@ -11,7 +11,7 @@ from src.schemas.product import CreateProduct
 debug_logger = logging.getLogger("debug")
 
 
-async def create_product(new_product: CreateProduct, session: AsyncSession) -> Product:
+async def create_new_product(new_product: CreateProduct, session: AsyncSession) -> Product:
     product = Product(**new_product.model_dump())
     session.add(product)
     try:
@@ -66,10 +66,8 @@ async def get_products_paginated(
         query = query.order_by(Product.price.desc(), Product.id.asc())
     else:
         query = query.order_by(Product.price.asc(), Product.id.asc())
-
     # Применяем лимит
     query = query.limit(limit)
-
     result = await session.execute(query)
 
     return result.scalars().all()
@@ -84,12 +82,12 @@ async def get_product_by_id(product_id: int, session: AsyncSession) -> Product |
 async def update_product_by_id(product: CreateProduct, product_id: int, session: AsyncSession) -> Product | None:
     db_product = await session.get(Product, product_id)
     if db_product is None:
-        return db_product
+        return None
+    db_product.name = product.name
+    db_product.quantity = product.quantity
+    db_product.price = product.price
+    db_product.is_active = product.is_active
     try:
-        db_product.name = product.name
-        db_product.quantity = product.quantity
-        db_product.price = product.price
-        db_product.is_active = product.is_active
         await session.commit()
         await session.refresh(db_product)
         return db_product
