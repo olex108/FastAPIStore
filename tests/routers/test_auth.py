@@ -3,6 +3,9 @@ from copy import copy
 import pytest
 from fastapi import status
 from httpx import AsyncClient
+from tests.conftest import async_session_maker
+from src.models.user import Role
+
 
 # Пример данных для регистрации пользователя
 user_register_data = {
@@ -16,9 +19,24 @@ user_register_data = {
 
 @pytest.mark.asyncio
 async def test_register_user(ac):
+    async with async_session_maker() as session:
+        role = Role(name="Customer")
+        session.add(role)
+        await session.commit()
+
     response = await ac.post("/users/register", json=user_register_data)
     assert response.status_code == status.HTTP_201_CREATED
-    assert "email" in response.json()
+    assert response.json()["email"] == user_register_data["email"]
+
+    # тест для существующего пользователя
+    response = await ac.post("/users/register", json=user_register_data)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.asyncio
+async def test_register_user_errors(ac):
+    response = await ac.post("/users/register", json=user_register_data)
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     # тест для существующего пользователя
     response = await ac.post("/users/register", json=user_register_data)
