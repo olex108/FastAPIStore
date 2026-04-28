@@ -17,18 +17,18 @@ async def test_get_current_user_cart_me(ac: AsyncClient):
     async with async_session_maker() as session:
         # Пользователь
         user = User(
-            full_name="Cart Owner", email="cart@test.com", phone="+71111111111", hashed_password="test", is_active=True
+            id=1, full_name="Cart Owner", email="cart@test.com", phone="+71111111111", hashed_password="test", is_active=True
         )
         session.add(user)
         await session.flush()  # Получаем user.id
 
         # Продукт
-        prod = Product(name="Test Item", price=100.0, quantity=10, is_active=True)
+        prod = Product(id=1, name="Test Item", price=100.0, quantity=10, is_active=True)
         session.add(prod)
         await session.flush()
 
         # Корзина
-        cart = Cart(user_id=user.id, status="current")  # Укажите ваш CartStatus
+        cart = Cart(id=1, user_id=user.id, status="current")  # Укажите ваш CartStatus
         session.add(cart)
         await session.flush()
 
@@ -38,13 +38,15 @@ async def test_get_current_user_cart_me(ac: AsyncClient):
         await session.commit()
         user_id = user.id
 
+
     # 2. Мокаем авторизацию (передаем созданного пользователя)
-    mock_user = get_mock_user()
+    mock_user = user
     mock_user.id = user_id
+    main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_user
     main_app.dependency_overrides[AuthUserDependencies.get_current_active_user] = lambda: mock_user
 
     # 3. Запрос
-    response = await ac.get("/cart/me")
+    response = await ac.get("/carts/me")
 
     assert response.status_code == 200
     data = response.json()
@@ -79,7 +81,7 @@ async def test_get_cart_by_user_id_as_admin(ac: AsyncClient):
     main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_admin
 
     # 3. Запрос к чужой корзине
-    response = await ac.get(f"/cart/{other_user_id}")
+    response = await ac.get(f"/carts/{other_user_id}")
 
     assert response.status_code == 200
     assert response.json()["user_id"] == other_user_id
@@ -97,7 +99,7 @@ async def test_get_cart_error_500(ac: AsyncClient, monkeypatch):
     # Патчим функцию именно там, где её вызывает роутер
     monkeypatch.setattr(cart_router, "get_user_cart", mock_get_user_cart_fail)
 
-    response = await ac.get("/cart/me")
+    response = await ac.get("/carts/me")
 
     assert response.status_code == 500
     assert response.json()["detail"] == "Can`t get cart data"
@@ -129,7 +131,7 @@ async def test_add_product_to_me_success(ac: AsyncClient):
     main_app.dependency_overrides[AuthUserDependencies.get_current_user] = lambda: mock_user
 
     payload = {"product_id": prod.id, "product_quantity": 2}
-    response = await ac.post("/cart/me/add_product", json=payload)
+    response = await ac.post("/carts/me/add_product", json=payload)
 
     assert response.status_code == 200
     assert response.json()["products"][0]["product_quantity"] == 2
@@ -161,7 +163,7 @@ async def test_add_user_product_by_id_success(ac: AsyncClient):
 
     payload = {"product_id": prod_id, "product_quantity": 1}
     # Здесь user_id идет в путь
-    response = await ac.post(f"/cart/{target_id}/add_product", json=payload)
+    response = await ac.post(f"/carts/{target_id}/add_product", json=payload)
 
     assert response.status_code == 200
     assert response.json()["user_id"] == target_id
@@ -194,7 +196,7 @@ async def test_add_products_list_to_me_success(ac: AsyncClient):
     payload = [{"product_id": p1.id, "product_quantity": 1}, {"product_id": p2.id, "product_quantity": 3}]
 
     # Добавляем params={"user_id": user.id}, чтобы удовлетворить сигнатуру OwnerOrPermissionChecker
-    response = await ac.post("/cart/me/add_products", json=payload, params={"user_id": user.id})
+    response = await ac.post("/carts/me/add_products", json=payload, params={"user_id": user.id})
 
     assert response.status_code == 200
     data = response.json()
@@ -235,7 +237,7 @@ async def test_add_products_list_success(ac: AsyncClient):
 
     payload = [{"product_id": p1_id, "product_quantity": 2}, {"product_id": p2_id, "product_quantity": 5}]
 
-    response = await ac.post("/cart/me/add_products", json=payload)
+    response = await ac.post("/carts/me/add_products", json=payload)
 
     assert response.status_code == 200
     data = response.json()
