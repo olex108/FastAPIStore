@@ -7,11 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config.database import db_handler
 from src.config.settings import get_settings
 from src.crud.cart import create_cart
-from src.crud.user import add_role_to_user, create_new_user, get_user_by_id, get_users_paginated
+from src.crud.user import add_role_to_user, create_new_user, get_user_by_id, get_users_paginated, get_role_by_name
 from src.dependencies.auth import AuthUserDependencies
 from src.dependencies.permissions import PermissionChecker
 from src.models.user import User
 from src.schemas.user import UserInfo, UserRegister, UsersPaginatedOut
+from src.utils.pagination import CursorHandler
 from src.utils.security import PasswordHandler
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -35,12 +36,13 @@ async def register_user(
     user_data["is_active"] = True
 
     new_user = await create_new_user(user=user_data, session=session)
-    await create_cart(new_user, session=session)
     try:
-        await add_role_to_user(user=new_user, role="Customer", session=session)
+        # Создаем корзину и добавляем роль для нового пользователя
+        await create_cart(new_user, session=session)
+        role = await get_role_by_name(name="Customer", session=session)
+        await add_role_to_user(user=new_user, role=role, session=session)
     except Exception:
-        pass
-
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return new_user
 
 
@@ -61,26 +63,13 @@ async def get_users(
     """
 
     # Преобразовываем и проверяем курсор курсором
-    if cursor:
-        try:
-            name, last_id = cursor.rsplit("::", 1)
-            cursor_data = (name, int(last_id))
-        except (ValueError, IndexError):
-            raise HTTPException(status_code=400, detail="Incorrect cursor format")
-    else:
-        cursor_data = None
+    cursor_data = await CursorHandler.get_cursor_data(cursor) if cursor else None
 
     users_list = await get_users_paginated(
         session=session, limit=limit, name_query=name_query, cursor_data=cursor_data
     )
 
-    # Собираем следующий курсор
-    if len(users_list) == limit:
-        last = users_list[-1]
-        val = last.full_name
-        next_cursor = f"{val}::{last.id}"
-    else:
-        next_cursor = None
+    next_cursor = await CursorHandler.get_next_cursor_user(users_list[-1]) if len(users_list) == limit else None
 
     return UsersPaginatedOut(items=users_list, next_cursor=next_cursor)
 
@@ -92,7 +81,6 @@ async def get_current_user_info(
 ):
     """
     Эндпоинт для просмотра информации о текущем пользователе
-
     Доступен для пользователей с разрешением "users:view"
     """
 
@@ -107,9 +95,8 @@ async def get_user_info(
 ):
     """
     Эндпоинт для просмотра информации о пользователе
-
     Доступен для пользователей с разрешением "users:view"
     """
-    user = await get_user_by_id(session=session, user_id=user_id)
 
+    user = await get_user_by_id(session=session, user_id=user_id)
     return user

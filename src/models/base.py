@@ -1,7 +1,8 @@
 # from datetime import datetime
 # from typing import Annotated
 from sqlalchemy import MetaData
-from sqlalchemy.orm import DeclarativeBase, mapped_column
+from sqlalchemy.orm import DeclarativeBase
+
 
 # class ModelsAnnotation:
 #     """Кастомные настройки аннотации полей в моделях"""
@@ -25,7 +26,6 @@ class Base(DeclarativeBase):
             "pk": "pk_%(table_name)s",
         }
     )
-
 
 # Импортируем модели для инициализации при миграциях
 # from .auth import RefreshSession

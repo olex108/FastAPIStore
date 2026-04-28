@@ -12,7 +12,7 @@ from src.config.tkq import broker
 from .config.logger import LOGGING_CONFIG
 from .config.settings import get_settings
 from .middlewares.access_logging import LogMiddleware
-from .routers import auth, cart, product, user
+from .routers import auth, cart, product, user, order
 
 settings = get_settings()
 
@@ -68,6 +68,7 @@ main_app.include_router(user.router)
 main_app.include_router(product.router)
 main_app.include_router(auth.router)
 main_app.include_router(cart.router)
+main_app.include_router(order.router)
 
 
 if __name__ == "__main__":

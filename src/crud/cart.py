@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import List
 
 from sqlalchemy import delete, select
@@ -19,7 +20,7 @@ async def create_cart(user: User, session: AsyncSession) -> None:
         new_cart = Cart(user_id=user.id)
         session.add(new_cart)
         await session.commit()
-        debug_logger.info("Created new cart")
+        debug_logger.info("--- Created new cart ---")
 
     except Exception as e:
         await session.rollback()
@@ -27,11 +28,23 @@ async def create_cart(user: User, session: AsyncSession) -> None:
         raise e
 
 
+async def update_ordered_cart(cart: Cart, order_at: datetime, order_amount: float, session: AsyncSession) -> None:
+    cart.order_at = order_at
+    cart.order_amount = int(order_amount)
+    cart.status = CartStatus.IN_PROGRESS
+    try:
+        await session.commit()
+        debug_logger.info("--- Updated cart ---")
+    except Exception as e:
+        await session.rollback()
+        debug_logger.error(f"--- Update cart failed: {e.args} ---")
+
+
 async def get_user_cart(user_id: int, session: AsyncSession) -> Cart:
     try:
         query = (
             select(Cart)
-            .where(Cart.user_id == user_id, Cart.status == CartStatus.CURRENT)
+            .where(Cart.user_id == user_id)
             .options(selectinload(Cart.products).selectinload(CartProducts.product))
         )
         result = (await session.execute(query)).scalar_one_or_none()
@@ -45,10 +58,9 @@ async def get_user_cart(user_id: int, session: AsyncSession) -> Cart:
 async def get_cart_id_by_user_id(user_id: id, session: AsyncSession) -> int | None:
     """
     Запрос на получение корзины по user_id
-    Ищем именно активную корзину
     """
 
-    query = select(Cart.id).where(Cart.user_id == user_id, Cart.status == CartStatus.CURRENT)
+    query = select(Cart.id).where(Cart.user_id == user_id)
     cart_id = (await session.execute(query)).scalar_one_or_none()
     return cart_id
 
