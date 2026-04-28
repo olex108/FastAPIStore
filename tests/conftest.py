@@ -16,6 +16,8 @@ from src.models.base import Base
 from src.models.user import Permission, Role, User
 from src.utils.security import TokenHandler
 
+import uuid
+
 load_dotenv(dotenv_path=get_settings().BASE_DIR / ".env.test")
 
 # ФИКСТУРЫ ДЛЯ СОЗДАНИЯ ПОДКЛЮЧЕНИЙ
@@ -66,6 +68,11 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
 @pytest.fixture(scope="function", autouse=True)
 async def clean_tables():
     """Фикстура очистки данных во всех таблицах перед каждым тестом."""
+    # Очищаем ДО начала теста
+    async with engine_test.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(sa.text(f"TRUNCATE {table.name} CASCADE;"))
+
     yield  # Сначала выполняется сам тест
 
     # После теста очищаем данные
@@ -109,10 +116,11 @@ async def auth_headers():
     """
     # Создаем сессию через вашу рабочую фабрику
     async with async_session_maker() as session:
+        random_suffix = uuid.uuid4().hex[:6]
         user = User(
-            full_name="Test User",
-            email="test@example.com",
-            phone="+79991234567",
+            full_name=f"Test User {random_suffix}",
+            email=f"test_{random_suffix}@example.com",  # Уникальный email
+            phone=f"+7999{random_suffix}",
             hashed_password="fake_hash",
             is_active=True,
         )

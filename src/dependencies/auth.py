@@ -35,8 +35,6 @@ class AuthUserDependencies:
         """
 
         token = auth.credentials  # Извлекаем сам токен из объекта
-        print(token)
-
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
             user_identity = payload.get("sub")

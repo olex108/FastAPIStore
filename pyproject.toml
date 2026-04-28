@@ -6,7 +6,7 @@ authors = [
     {name = "Alex"}
 ]
 readme = "README.md"
-requires-python = ">=3.11,<4"
+requires-python = ">=3.13,<4"
 dependencies = [
     "fastapi (>=0.135.3,<0.136.0)",
     "uvicorn (>=0.43.0,<0.44.0)",

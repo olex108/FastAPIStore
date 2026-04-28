@@ -25,9 +25,15 @@ async def create_new_product(new_product: CreateProduct, session: AsyncSession) 
 
 
 async def get_all_products(session: AsyncSession) -> Sequence[Product]:
-    query = select(Product).order_by(Product.id)
+    query = select(Product)
     result = await session.execute(query)
     return result.scalars().all()
+
+async def get_all_active_products(session: AsyncSession) -> Sequence[Product]:
+    query = select(Product).where(Product.is_active == True)
+    result = await session.execute(query)
+    return result.scalars().all()
+
 
 
 async def get_products_paginated(
@@ -67,7 +73,7 @@ async def get_products_paginated(
     else:
         query = query.order_by(Product.price.asc(), Product.id.asc())
     # Применяем лимит
-    query = query.limit(limit)
+    query = query.where(Product.is_active == True).limit(limit)
     result = await session.execute(query)
 
     return result.scalars().all()
