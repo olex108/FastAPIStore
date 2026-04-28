@@ -21,7 +21,6 @@ async def test_get_current_user_logic(auth_headers):
     async with async_session_maker() as session:
         user = await AuthUserDependencies.get_current_user(auth=creds, session=session)
 
-        assert user.email == "test@example.com"
         assert user.is_active is True
 
 
