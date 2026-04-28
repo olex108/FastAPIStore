@@ -2,7 +2,6 @@
 import logging
 from contextlib import asynccontextmanager
 
-import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -72,6 +71,8 @@ main_app.include_router(order.router)
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     settings = get_settings()
 
     uvicorn.run("src.main:main_app", host=settings.HOST, port=settings.PORT, reload=True, log_config=LOGGING_CONFIG)

@@ -60,7 +60,7 @@ services:
       - ./logs:/app/logs    # Папка для логов
     command: >
       sh -c "alembic upgrade head && 
-             python src/main.py"
+             python -m src.main"
 
   worker:
     build: .
@@ -75,7 +75,7 @@ services:
       - .:/app
       - ./media:/app/media  # Воркер должен видеть те же файлы
       - ./logs:/app/logs
-    command: taskiq worker src.config.tkq:broker src.tasks --reload
+    command: taskiq worker src.config.tkq:broker src.tasks
 
   # Сервис для запуска тестов
   pytest:
