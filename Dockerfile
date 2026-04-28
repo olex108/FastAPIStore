@@ -8,7 +8,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_VIRTUALENVS_CREATE=false \
     PYTHONPATH=/app
 
-
 # Устанавливаем рабочую директорию в контейнере
 WORKDIR /app
 
@@ -17,7 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libc-dev \
     libpq-dev \
-    netcat-openbsd \
     curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -35,11 +33,10 @@ RUN poetry install --no-root --no-interaction --no-ansi
 # Копируем остальные файлы проекта в контейнер
 COPY . .
 
-ENV PYTHONPATH=/app
+RUN mkdir -p /app/media/orders /app/logs
 
 # Открываем порт для взаимодействия с приложением
-EXPOSE 8000
-
+EXPOSE 8080
 
 # Определяем команду для запуска приложения
 CMD ["python", "src/main.py"]
