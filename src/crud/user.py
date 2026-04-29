@@ -41,13 +41,29 @@ async def create_new_user(user: dict, session: AsyncSession) -> User:
     return new_user
 
 
+async def add_new_user(user: dict, session: AsyncSession) -> User:
+
+    new_user = User(**user)
+    session.add(new_user)
+    try:
+        await session.flush()
+    except IntegrityError:
+        debug_logger.warning(f"--- Create user failed (IntegrityError): {e.args} ---")
+        raise IntegrityError
+    except Exception as e:
+        debug_logger.error(f"--- Create user failed: {e.args} ---")
+        raise e
+
+    return new_user
+
+
 async def get_role_by_name(name: str, session: AsyncSession) -> Role | None:
     query = select(Role).where(Role.name == name)
     result = (await session.execute(query)).scalar_one_or_none()
     return result
 
 
-async def add_role_to_user(user: User, role: Role, session: AsyncSession) -> None:
+async def create_role_to_user(user: User, role: Role, session: AsyncSession) -> None:
     new_role_user = RoleUsers(role_id=role.id, user_id=user.id)
     session.add(new_role_user)
     try:
@@ -56,6 +72,14 @@ async def add_role_to_user(user: User, role: Role, session: AsyncSession) -> Non
     except Exception as e:
         await session.rollback()
         debug_logger.error(f"--- Add user to role: {role} failed: {e.args} ---")
+
+
+async def add_role_to_user(user: User, role: Role, session: AsyncSession) -> RoleUsers:
+
+    new_role_user = RoleUsers(role_id=role.id, user_id=user.id)
+    session.add(new_role_user)
+    await session.flush()
+    return new_role_user
 
 
 async def get_all_users(session: AsyncSession) -> Sequence[User]:

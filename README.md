@@ -94,15 +94,15 @@ docker exec -it store_db psql -U postgres -d fa_store_db -c "\dt"
 
 1. Запуск кастомной программы загрузки ролей и разрешений для пользователей
 
-    ```bash
-    docker exec -it fastapi_app python src/scripts/default_settings.py
-    ```
+```bash
+docker exec -it fastapi_app python src/scripts/default_settings.py
+```
    
 2. Управление разрешениями ролей
 
-    ```bash
-    docker exec -it fastapi_app python src/scripts/manage_role_perms.py
-    ```
+```bash
+docker exec -it fastapi_app python src/scripts/manage_role_perms.py
+```
 
 3. Управление ролями пользователей
 
