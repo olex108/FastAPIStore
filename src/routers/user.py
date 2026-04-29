@@ -56,7 +56,7 @@ async def register_user(
     try:
         try:
             new_user = await add_new_user(user=user_data, session=session)
-        except IntegrityError:
+        except Exception:
             raise exception_user_exist
 
         await add_user_cart(new_user, session=session)

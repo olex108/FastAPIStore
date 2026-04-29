@@ -16,7 +16,7 @@ from src.crud.order import get_contacts_data, create_new_order
 from src.dependencies.auth import AuthUserDependencies
 from src.config.database import db_handler
 from src.crud.cart import get_cart_by_user_id, update_ordered_cart
-from src.crud.user import  get_user_by_id
+from src.crud.user import get_user_by_id
 from src.services.excel_receipt_generator import generate_receipt_excel
 from src.services.mailing import send_email_task
 from src.config.settings import get_settings
@@ -60,7 +60,12 @@ async def make_order(
     # Сохраняем заказ и обновляем корзину в БД
     order = await create_new_order(user_cart=pydantic_cart, receipt_url=receipt_url, session=session)
     if order is not None:
-        await update_ordered_cart(cart=db_cart, order_at=pydantic_cart.order_at, order_amount=pydantic_cart.amount, session=session)
+        await update_ordered_cart(
+            cart=db_cart,
+            order_at=pydantic_cart.order_at,
+            order_amount=pydantic_cart.amount,
+            session=session
+        )
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -69,10 +74,6 @@ async def make_order(
 
     # 3. Отправляем в Taskiq
     full_file_path = settings.BASE_DIR / receipt_url
-    print("Path to file -----------", full_file_path)
-
-    with open(full_file_path, "rb") as f:
-        file_content = f.read()
 
     await send_email_task.kiq(
         subject=f"Ваш чек по заказу №{pydantic_cart.id}",

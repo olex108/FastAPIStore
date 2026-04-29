@@ -48,7 +48,7 @@ async def add_new_user(user: dict, session: AsyncSession) -> User:
     try:
         await session.flush()
     except IntegrityError:
-        debug_logger.warning(f"--- Create user failed (IntegrityError): {e.args} ---")
+        debug_logger.warning("--- Create user failed (IntegrityError) ---")
         raise IntegrityError
     except Exception as e:
         debug_logger.error(f"--- Create user failed: {e.args} ---")

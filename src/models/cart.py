@@ -85,5 +85,3 @@ class CartProducts(Base):
     )
 
     __table_args__ = (Index("idx_cart_product_unique", cart_id, product_id, unique=True),)
-
-

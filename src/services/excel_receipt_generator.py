@@ -38,7 +38,7 @@ def generate_receipt_excel(cart_data: CartOut, contacts_data: Contacts, user_inf
     worksheet.write('A4', 'Реквизиты компании:', bold)
 
     try:
-        worksheet.write('A5', f'{contacts_data.name  or "Не указана"}')
+        worksheet.write('A5', f'{contacts_data.name or "Не указана"}')
         worksheet.write('A6', f'ИНН {contacts_data.inn or "Не указана"}')
         worksheet.write('A7', f'{contacts_data.address or "Не указана"}')
     except Exception:

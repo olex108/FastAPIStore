@@ -36,6 +36,3 @@ async def create_new_order(user_cart: CartOut, receipt_url: str, session: AsyncS
 
     debug_logger.info(f"--- Order created successfully: ID {new_order.id} ---")
     return new_order
-
-
-
