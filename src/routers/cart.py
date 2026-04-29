@@ -227,7 +227,7 @@ async def create_new_cart(
     """
 
     current_cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
-    if current_cart.status != CartStatus.CURRENT:
+    if current_cart.status == CartStatus.CURRENT:
         raise exception_400_new_cart
     await clear_cart_products(cart_id=current_user.cart.id, session=session)
     new_cart = await default_user_cart_settings(cart_id=current_user.cart.id, session=session)
