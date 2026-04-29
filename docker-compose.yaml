@@ -77,6 +77,19 @@ services:
       - ./logs:/app/logs
     command: taskiq worker src.config.tkq:broker src.tasks
 
+  nginx:
+    image: nginx:latest
+    container_name: store_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./media:/app/media:ro
+      - ./logs:/var/log/nginx
+    depends_on:
+      - app
+
   # Сервис для запуска тестов
   pytest:
     build: .
