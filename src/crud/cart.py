@@ -15,7 +15,7 @@ from src.schemas.cart import ProductAdd
 debug_logger = logging.getLogger("debug")
 
 
-async def create_cart(user: User, session: AsyncSession) -> None:
+async def create_user_cart(user: User, session: AsyncSession) -> None:
     try:
         new_cart = Cart(user_id=user.id)
         session.add(new_cart)
@@ -26,6 +26,14 @@ async def create_cart(user: User, session: AsyncSession) -> None:
         await session.rollback()
         debug_logger.error(f"--- Create cart failed: {e.args} ---")
         raise e
+
+
+async def add_user_cart(user: User, session: AsyncSession) -> Cart:
+
+    new_cart = Cart(user_id=user.id)
+    session.add(new_cart)
+    await session.flush()
+    return new_cart
 
 
 async def update_ordered_cart(cart: Cart, order_at: datetime, order_amount: float, session: AsyncSession) -> None:
@@ -40,7 +48,7 @@ async def update_ordered_cart(cart: Cart, order_at: datetime, order_amount: floa
         debug_logger.error(f"--- Update cart failed: {e.args} ---")
 
 
-async def get_user_cart(user_id: int, session: AsyncSession) -> Cart:
+async def get_cart_by_user_id(user_id: int, session: AsyncSession) -> Cart:
     try:
         query = (
             select(Cart)
@@ -153,3 +161,24 @@ async def clear_cart_products(cart_id: int, session: AsyncSession) -> None:
         await session.rollback()
         debug_logger.error(f"--- Clear cart products failed: {e.args} ---")
         raise e
+
+
+async def default_user_cart_settings(cart_id: int, session: AsyncSession) -> Cart | None:
+
+    cart = await session.get(Cart, cart_id)
+    if not cart:
+        debug_logger.warning(f"--- Cart with id {cart_id} not found ---")
+        return None
+
+    cart.status = CartStatus.CURRENT
+    cart.order_amount = None
+    cart.order_at = None
+
+    try:
+        await session.commit()
+        await session.refresh(cart)
+    except Exception as e:
+        debug_logger.error(f"--- Default cart failed: {e.args} ---")
+        return None
+
+    return cart

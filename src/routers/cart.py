@@ -10,7 +10,8 @@ from src.crud.cart import (
     add_products_list_to_cart,
     clear_cart_products,
     delete_product_from_cart,
-    get_user_cart,
+    get_cart_by_user_id,
+    default_user_cart_settings
 )
 from src.dependencies.auth import AuthUserDependencies
 from src.dependencies.permissions import OwnerOrPermissionChecker
@@ -26,10 +27,14 @@ exception_500_get_cart = HTTPException(status_code=status.HTTP_500_INTERNAL_SERV
 exception_400_cart_in_order = HTTPException(
     status_code=status.HTTP_400_BAD_REQUEST, detail="Cart in order. Create new cart"
 )
+exception_400_new_cart = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="You dont make order. Clear cart or make an order first"
+)
 
 
 @router.get("/me", response_model=CartOut)
-async def get_current_user_cart(
+async def get_cart(
     current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
 ):
@@ -38,14 +43,14 @@ async def get_current_user_cart(
     """
 
     try:
-        user_cart = await get_user_cart(user_id=current_user.id, session=session)
+        user_cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
         return user_cart
     except Exception:
         raise exception_500_get_cart
 
 
 @router.get("/{user_id}", response_model=CartOut)
-async def get_cart(
+async def get_user_cart(
     user_id: int,
     current_user: Annotated[User, Depends(OwnerOrPermissionChecker(["carts:view",]))],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
@@ -56,7 +61,7 @@ async def get_cart(
     """
 
     try:
-        user_cart = await get_user_cart(user_id=user_id, session=session)
+        user_cart = await get_cart_by_user_id(user_id=user_id, session=session)
         return user_cart
     except Exception:
         raise exception_500_get_cart
@@ -83,13 +88,13 @@ async def add_product(
     except Exception:
         raise exception_400_add_prod
 
-    cart = await get_user_cart(user_id=current_user.id, session=session)
+    cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
 
     return cart
 
 
 @router.post("/{user_id}/add_product", response_model=CartOut)
-async def add_user_product(
+async def add_product_to_user_cart(
     user_id: int,
     product: ProductAdd,
     current_user: Annotated[User, Depends(OwnerOrPermissionChecker(["carts:view",]))],
@@ -103,7 +108,7 @@ async def add_user_product(
     """
 
     # Получение cart id
-    user_cart = await get_user_cart(user_id=user_id, session=session)
+    user_cart = await get_cart_by_user_id(user_id=user_id, session=session)
     if user_cart.status != CartStatus.CURRENT:
         raise exception_400_cart_in_order
 
@@ -113,7 +118,7 @@ async def add_user_product(
     except Exception:
         raise exception_400_add_prod
 
-    cart = await get_user_cart(user_id=user_id, session=session)
+    cart = await get_cart_by_user_id(user_id=user_id, session=session)
 
     return cart
 
@@ -140,13 +145,13 @@ async def add_products_list(
     except Exception:
         raise exception_400_add_prod
 
-    cart = await get_user_cart(user_id=current_user.id, session=session)
+    cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
 
     return cart
 
 
 @router.delete("/me/{product_id}", response_model=CartOut)
-async def delete_my_product(
+async def delete_product(
     product_id: int,
     current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
     session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
@@ -160,7 +165,7 @@ async def delete_my_product(
         raise exception_400_cart_in_order
     await delete_product_from_cart(product_id=product_id, cart_id=current_user.cart.id, session=session)
 
-    cart = await get_user_cart(user_id=current_user.id, session=session)
+    cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
 
     return cart
 
@@ -179,13 +184,13 @@ async def delete_user_product(
 
     # Получение cart id
 
-    user_cart = await get_user_cart(user_id=user_id, session=session)
+    user_cart = await get_cart_by_user_id(user_id=user_id, session=session)
     if user_cart.status != CartStatus.CURRENT:
         raise exception_400_cart_in_order
 
     await delete_product_from_cart(product_id=product_id, cart_id=user_cart.id, session=session)
 
-    cart = await get_user_cart(user_id=current_user.id, session=session)
+    cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
 
     return cart
 
@@ -205,6 +210,28 @@ async def clear_cart(
 
     await clear_cart_products(cart_id=current_user.cart.id, session=session)
 
-    cart = await get_user_cart(user_id=current_user.id, session=session)
+    cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
 
     return cart
+
+
+@router.put("me/new", response_model=CartOut)
+async def create_new_cart(
+    current_user: Annotated[User, Depends(AuthUserDependencies.get_current_active_user)],
+    session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
+):
+
+    """
+    Эндпоинт для обновления корзины после создания заказа.
+    Проверяет статус корзины, если статус не cerrent выполняет обновление статуса и очищает корзину
+    """
+
+    current_cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
+    if current_cart.status != CartStatus.CURRENT:
+        raise exception_400_new_cart
+    await clear_cart_products(cart_id=current_user.cart.id, session=session)
+    new_cart = await default_user_cart_settings(cart_id=current_user.cart.id, session=session)
+    if not new_cart:
+        raise exception_500_get_cart
+
+    return new_cart

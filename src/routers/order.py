@@ -15,7 +15,7 @@ from src.schemas.order import ContactOut, OrderOut
 from src.crud.order import get_contacts_data, create_new_order
 from src.dependencies.auth import AuthUserDependencies
 from src.config.database import db_handler
-from src.crud.cart import get_user_cart, update_ordered_cart
+from src.crud.cart import get_cart_by_user_id, update_ordered_cart
 from src.crud.user import  get_user_by_id
 from src.services.excel_receipt_generator import generate_receipt_excel
 from src.services.mailing import send_email_task
@@ -44,7 +44,7 @@ async def make_order(
 ):
 
     # получаем данные из базы данных
-    db_cart = await get_user_cart(user_id=current_user.id, session=session)
+    db_cart = await get_cart_by_user_id(user_id=current_user.id, session=session)
     if db_cart.status != CartStatus.CURRENT:
         raise HTTPException(
             status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
