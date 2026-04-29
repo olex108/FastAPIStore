@@ -55,7 +55,10 @@ async def get_products_paginated_list(
         session=session, limit=limit, sort_by=sort_by, name_query=name_query, cursor_data=cursor_data
     )
 
-    next_cursor = await CursorHandler.get_next_cursor_product(products_list[-1], sort_by) if len(products_list) == limit else None
+    next_cursor = await CursorHandler.get_next_cursor_product(
+        products_list[-1],
+        sort_by
+    ) if len(products_list) == limit else None
 
     return ProductPaginationOut(items=products_list, next_cursor=next_cursor)
 

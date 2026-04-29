@@ -17,7 +17,12 @@ async def test_get_current_user_cart_me(ac: AsyncClient):
     async with async_session_maker() as session:
         # Пользователь
         user = User(
-            id=1, full_name="Cart Owner", email="cart@test.com", phone="+71111111111", hashed_password="test", is_active=True
+            id=1,
+            full_name="Cart Owner",
+            email="cart@test.com",
+            phone="+71111111111",
+            hashed_password="test",
+            is_active=True
         )
         session.add(user)
         await session.flush()  # Получаем user.id
@@ -37,7 +42,6 @@ async def test_get_current_user_cart_me(ac: AsyncClient):
         session.add(cart_prod)
         await session.commit()
         user_id = user.id
-
 
     # 2. Мокаем авторизацию (передаем созданного пользователя)
     mock_user = user
@@ -97,7 +101,7 @@ async def test_get_cart_error_500(ac: AsyncClient, monkeypatch):
         raise Exception("Database Connection Lost")
 
     # Патчим функцию именно там, где её вызывает роутер
-    monkeypatch.setattr(cart_router, "get_user_cart", mock_get_user_cart_fail)
+    monkeypatch.setattr(cart_router, "get_cart_by_user_id", mock_get_user_cart_fail)
 
     response = await ac.get("/carts/me")
 

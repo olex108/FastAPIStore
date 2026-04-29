@@ -9,7 +9,8 @@ from src.models import Product, User
 class CursorHandler:
 
     @staticmethod
-    async def get_cursor_data(cursor: Optional[str]) -> Optional[tuple[int|str, int]]:
+    async def get_cursor_data(cursor: Optional[str]) -> Optional[tuple[int | str, int]]:
+
         try:
             val, last_id = cursor.rsplit("::", 1)
             cursor_data = (val, int(last_id))

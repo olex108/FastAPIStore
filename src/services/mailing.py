@@ -1,4 +1,4 @@
-#services/mailing.py
+# services/mailing.py
 import logging
 from email.message import EmailMessage
 from pathlib import Path

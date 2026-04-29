@@ -1,4 +1,7 @@
 [flake8]
 max-line-length = 119
-ignore = E203, W503
+ignore = E203, W503, F401
+per-file-ignores =
+    src/models/*: F821
+    tests/conftest.py: E501
 exclude = .git, __pycache__, venv, .venv, migrations,
