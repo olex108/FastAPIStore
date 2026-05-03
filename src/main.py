@@ -2,16 +2,16 @@
 import logging
 from contextlib import asynccontextmanager
 
-import uvicorn
-# from debug_toolbar.middleware import DebugToolbarMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config.database import db_handler
+from src.config.database import db_handler
+from src.config.tkq import broker
+
 from .config.logger import LOGGING_CONFIG
 from .config.settings import get_settings
 from .middlewares.access_logging import LogMiddleware
-from .routers import product, user, auth
+from .routers import auth, cart, product, user, order
 
 settings = get_settings()
 
@@ -20,15 +20,13 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """
     Благодаря декоратору @asynccontextmanager создаем асинхронный контекстный менеджер
-
-    Часть до yield выполняется в методе aenter
-    Часть после выполнится в aexit
-    :param app:
-    :return:
     """
 
     # startup
-    # Инициализируем базу
+    # Инициализация Taskiq
+    if not broker.is_worker_process:
+        await broker.startup()
+    # Инициализируем зависимости сессий подключения к БД
     db_handler.init_db(
         database_url=str(settings.DATABASE_ASYNC_URL),
         echo=settings.DEBUG,
@@ -40,6 +38,10 @@ async def lifespan(app: FastAPI):
     yield
     # shutdown
     debug_logger.debug("--- Lifespan shutdown ---")
+    # Отключение Taskiq
+    if not broker.is_worker_process:
+        await broker.shutdown()
+    # Отключение БД
     await db_handler.dispose()
 
 
@@ -64,18 +66,13 @@ main_app.add_middleware(
 main_app.include_router(user.router)
 main_app.include_router(product.router)
 main_app.include_router(auth.router)
-
-
-# print("Routers: ", main_app.routes)
-
-
-@main_app.get("/")
-def read_root():
-    print("!!!MAIN GET TEST!!!")
-    return {"message": "Hello, World!"}
+main_app.include_router(cart.router)
+main_app.include_router(order.router)
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     settings = get_settings()
 
     uvicorn.run("src.main:main_app", host=settings.HOST, port=settings.PORT, reload=True, log_config=LOGGING_CONFIG)

@@ -58,7 +58,6 @@ class DatabaseSyncHandler(DatabaseHandler):
         self.session_maker = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
 
-# Async database
 class DatabaseAsyncHandler(DatabaseHandler):
     """Класс для асинхронной работы с базой данных"""
 
@@ -72,19 +71,16 @@ class DatabaseAsyncHandler(DatabaseHandler):
         """Метод для инициализации движка и фабрики сессий"""
 
         debug_logger.debug("--- Database handler init ---")
-
         self.engine: AsyncEngine = create_async_engine(
             url=database_url,
             echo=echo,
             pool_size=pool_size,
             max_overflow=max_overflow,
         )
+
         self.session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False, expire_on_commit=False
         )
-
-        # Движок для асинхронного использования
-        # database = Database(DATABASE_URL)
 
     async def dispose(self) -> None:
         """Асинхронный метод для закрытия сессии"""
@@ -97,10 +93,7 @@ class DatabaseAsyncHandler(DatabaseHandler):
 
         debug_logger.debug("--- Database handler session_maker get ---")
         async with self.session_maker() as session:
-            try:
-                yield session
-            finally:
-                await session.close()
+            yield session
 
 
 db_handler = DatabaseAsyncHandler()

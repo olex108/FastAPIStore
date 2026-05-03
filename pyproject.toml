@@ -6,7 +6,7 @@ authors = [
     {name = "Alex"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13,<4"
 dependencies = [
     "fastapi (>=0.135.3,<0.136.0)",
     "uvicorn (>=0.43.0,<0.44.0)",
@@ -20,7 +20,14 @@ dependencies = [
     "asyncpg (>=0.31.0,<0.32.0)",
     "alembic (>=1.18.4,<2.0.0)",
     "fastapi-debug-toolbar (>=0.6.3,<0.7.0)",
-    "pwdlib[argon2] (>=0.3.0,<0.4.0)"
+    "pwdlib[argon2] (>=0.3.0,<0.4.0)",
+    "redis (>=7.4.0,<8.0.0)",
+    "taskiq (>=0.12.2,<0.13.0)",
+    "taskiq-redis (>=1.2.2,<2.0.0)",
+    "taskiq-fastapi (>=0.5.0,<0.6.0)",
+    "aiosmtplib (>=5.1.0,<6.0.0)",
+    "xlsxwriter (>=3.2.9,<4.0.0)",
+    "logging (>=0.4.9.6,<0.5.0.0)"
 ]
 
 
@@ -64,3 +71,32 @@ exclude = '''
 [tool.isort]
 # максимальная длина строки
 line_length = 119
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-cov = "^7.1.0"
+pytest-asyncio = "^0.25.0"
+httpx = "^0.28.1"
+
+#[tool.pytest.ini_options]
+#asyncio_mode = "auto"
+#asyncio_default_fixture_loop_scope = "session"
+
+#testpaths = ["tests"]
+#
+#[tool.coverage.run]
+#source = ["src"]
+#omit = [
+#    "src/scripts/*",       # Исключаем скрипты управления, они портят статистику
+#    "src/config/logger.py",
+#    "tests/*",
+#]
+#
+#[tool.coverage.report]
+#exclude_lines = [
+#    "pragma: no cover",
+#    "def __repr__",
+#    "if __name__ == .__main__.:",
+#    "raise NotImplementedError",
+#    "if TYPE_CHECKING:",
+#]

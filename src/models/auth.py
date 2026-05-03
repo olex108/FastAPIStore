@@ -1,8 +1,9 @@
-from src.config.settings import get_settings
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
+
+from src.config.settings import get_settings
 
 from .base import Base
 
