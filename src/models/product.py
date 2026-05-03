@@ -1,10 +1,13 @@
 from datetime import datetime
-from typing import Annotated, List
+from typing import List
 
 from sqlalchemy import func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+
+# class Category(Base):
+#     pass
 
 
 class Product(Base):
@@ -23,7 +26,10 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
     # Обратные связи
-    carts: Mapped[List["CartProducts"]] = relationship(back_populates="products")
+    carts: Mapped[List["CartProducts"]] = relationship(back_populates="product")
 
     def __str__(self):
         return f"{self.id} - {self.name} - {self.price} - {self.quantity}"
+
+    def __repr__(self):
+        return self.__str__()

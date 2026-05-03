@@ -1,14 +1,18 @@
 # schemas/user.py
 import logging
 import re
-from typing import Self
+from typing import List, Optional, Self
 
-from pydantic import BaseModel, EmailStr, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
 debug_logger = logging.getLogger("debug")
 
 
 class UserInfo(BaseModel):
+    """Схема для передачи ответа информации о пользователе"""
+
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     full_name: str
     email: EmailStr
@@ -16,6 +20,8 @@ class UserInfo(BaseModel):
 
 
 class UserRegister(BaseModel):
+    """Схема для регистрации пользователя"""
+
     full_name: str
     email: EmailStr
     phone: str
@@ -31,16 +37,16 @@ class UserRegister(BaseModel):
         """
 
         if phone[:2] != "+7":
-            raise ValidationError("Номер телефона должен начинаться с +7")
+            raise ValueError("Номер телефона должен начинаться с +7")
         if len(phone) != 12:
-            raise ValidationError("Номер телефона должен содержать 10 цифр после +7")
+            raise ValueError("Номер телефона должен содержать 10 цифр после +7")
         if not phone[-2:].isdigit():
-            raise ValidationError("Номер телефона должен составлять только цифры")
+            raise ValueError("Номер телефона должен составлять только цифры")
         return phone
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, password: str) -> bool:
+    def validate_password(cls, password: str) -> str:
         """
         Метод для валидации пароля с условиями:
          - Пароль должен соответствовать следующим требованиям: не менее 8 символов,
@@ -68,24 +74,31 @@ class UserRegister(BaseModel):
 
     @model_validator(mode="after")
     def check_passwords_match(self) -> Self:
+        """Проверка на совпадения полей пароля"""
+
         if self.password != self.confirm_password:
             raise ValueError("Пароли не совпадают")
         return self
 
 
-class UserCreate(BaseModel):
-    username: str
+class UserLogin(BaseModel):
+    """Схема для аутентификации пользователя"""
+
+    user: str
     password: str
 
-    @field_validator("username")
-    @classmethod
-    def username_must_not_be_admin(cls, v: str) -> str:
-        if v.lower() == "admin":
-            raise ValueError("Имя 'admin' зарезервировано")
-        return v
 
+class UserUpdate(BaseModel):
+    """Схема для изменения полей пользователя"""
 
-class UserAuth(BaseModel):
+    id: int
+    full_name: str
     email: EmailStr
     phone: str
-    password: str
+    is_active: bool
+    is_superuser: bool
+
+
+class UsersPaginatedOut(BaseModel):
+    items: List[UserInfo]
+    next_cursor: Optional[str] | None

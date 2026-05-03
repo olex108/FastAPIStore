@@ -1,0 +1,93 @@
+version: '3.13'
+
+services:
+  # Основная база данных
+  db:
+    image: postgres:17-alpine
+    container_name: store_db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: store_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Тестовая база данных
+  test_db:
+    image: postgres:17-alpine
+    container_name: store_test_db
+    environment:
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_password
+      - POSTGRES_DB=test_db
+    ports:
+      - "5433:5432"
+
+  app:
+    build: .
+    container_name: fastapi_app
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - ./media:/app/media  # Папка для чеков
+      - ./logs:/app/logs    # Папка для логов
+    command: >
+      sh -c "alembic upgrade head && 
+             python -m src.main"
+
+  worker:
+    build: .
+    container_name: taskiq_worker
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - ./media:/app/media  # Воркер должен видеть те же файлы
+      - ./logs:/app/logs
+    command: taskiq worker src.config.tkq:broker src.tasks
+
+  # Сервис для запуска тестов
+  pytest:
+    build: .
+    container_name: store_pytest
+    env_file: .env.test
+    depends_on:
+      - test_db
+    volumes:
+      - .:/app
+    # При запуске просто прогоняет тесты
+    command: pytest
+
+volumes:
+  postgres_data:

@@ -1,8 +1,8 @@
-from datetime import datetime
-from typing import Annotated
-
+# from datetime import datetime
+# from typing import Annotated
 from sqlalchemy import MetaData
-from sqlalchemy.orm import DeclarativeBase, mapped_column
+from sqlalchemy.orm import DeclarativeBase
+
 
 # class ModelsAnnotation:
 #     """Кастомные настройки аннотации полей в моделях"""
@@ -27,8 +27,8 @@ class Base(DeclarativeBase):
         }
     )
 
-
 # Импортируем модели для инициализации при миграциях
-# from .cart import Cart
+# from .auth import RefreshSession
+# from .cart import Cart, CartProducts
 # from .product import Product
-# from .user import User
+# from .user import Role, RoleUsers, User, Permission, RolePermissions
