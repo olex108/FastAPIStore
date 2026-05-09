@@ -18,12 +18,7 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Благодаря декоратору @asynccontextmanager создаем асинхронный контекстный менеджер
-    """
 
-    # startup
-    # Инициализация Taskiq
     if not broker.is_worker_process:
         await broker.startup()
     # Инициализируем зависимости сессий подключения к БД
@@ -56,12 +51,6 @@ main_app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# if settings.DEBUG and settings.DEBUG_TOOLBAR:
-#     main_app.add_middleware(
-#         DebugToolbarMiddleware,
-#         panels=["debug_toolbar.panels.sqlalchemy.SQLAlchemyPanel"],
-#         session_generators=["src.config.database:db_handler.session_getter"],
-#     )
 
 main_app.include_router(user.router)
 main_app.include_router(product.router)

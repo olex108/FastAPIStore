@@ -26,7 +26,6 @@ class AuthUserDependencies:
 
     @staticmethod
     async def get_current_user(
-        # Теперь получаем объект credentials, в котором лежит токен
         auth: Annotated[HTTPAuthorizationCredentials, Security(security)],
         session: Annotated[AsyncSession, Depends(db_handler.session_getter)],
     ) -> User:

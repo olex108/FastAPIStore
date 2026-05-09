@@ -12,12 +12,6 @@ forbidden_exception = HTTPException(
 
 
 class PermissionChecker:
-    """
-    Класс для работы с разрешениями прав доступа.
-
-    Инициализирует список разрешений
-    При вызове возвращает переданного пользователя или вызывает HTTP_403_FORBIDDEN
-    """
 
     def __init__(self, required_permissions: List[str]):
         self.required_permissions = required_permissions

@@ -39,15 +39,11 @@ class Settings(BaseAppParams):
     app_name: str = "fastapistore"
     admin_email: str = "admin@example.com"
     items_per_user: int = 50
-
     # Project
     SECRET_KEY: str
     DEBUG: bool
     HOST: str = "127.0.0.1"
     PORT: int = 8888
-
-    # DEBUG_TOOLBAR: bool = True
-
     # Database
     DB_USERNAME: str
     DB_PASSWORD: str
@@ -57,7 +53,6 @@ class Settings(BaseAppParams):
 
     POOL_SIZE: int = 10
     MAX_OVERFLOW: int = 50
-
     # AUTHENTICATION
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10
@@ -72,7 +67,6 @@ class Settings(BaseAppParams):
         return (
             f"postgresql+asyncpg://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
-
     # Imported settings
     REDIS_SETTINGS: RedisSettings = RedisSettings()
     SMTP: SMTPSettings = SMTPSettings()
